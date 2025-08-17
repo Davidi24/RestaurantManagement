@@ -1,4 +1,4 @@
-package pos.pos.Config;
+package pos.pos.Config.JWT;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

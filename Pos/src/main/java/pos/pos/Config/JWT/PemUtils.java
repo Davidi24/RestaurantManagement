@@ -1,4 +1,4 @@
-package pos.pos.Config;
+package pos.pos.Config.JWT;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
