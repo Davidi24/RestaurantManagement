@@ -19,9 +19,5 @@ public class UserController {
         return userService.getByEmail(auth.getName());
     }
 
-    @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public UserResponse getById(@PathVariable Long id) {
-        return userService.getById(id);
-    }
+
 }
