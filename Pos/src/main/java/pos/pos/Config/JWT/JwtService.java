@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,30 +27,76 @@ public class JwtService {
     @Value("${app.jwt.access-ttl}")
     private long accessTtlSeconds;
 
-    // 🔹 Create a new JWT token
+    @Value("${app.jwt.reset-ttl-seconds:400}")
+    private long resetTtlSeconds;
+
+    private final Map<String, Instant> revokedTokens = new ConcurrentHashMap<>();
+
     public String createAccessToken(Authentication auth) {
         Instant now = Instant.now();
-
-        // collect roles (e.g., ROLE_USER, ROLE_ADMIN)
-        var roles = auth.getAuthorities().stream()
+        Set<String> roles = auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .map(r -> r.replace("ROLE_", "")) // store as USER/ADMIN only
+                .map(r -> r.replace("ROLE_", ""))
                 .collect(Collectors.toSet());
 
-        // set claims
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer(issuer)
                 .issuedAt(now)
-                .expiresAt(now.plus(Duration.ofSeconds(accessTtlSeconds)))
-                .subject(auth.getName())  // usually the email
+                .expiresAt(now.plusSeconds(accessTtlSeconds))
+                .subject(auth.getName())
                 .claim("roles", roles)
+                .claim("purpose", "ACCESS")
                 .build();
 
         return encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
 
-    // 🔹 Decode & verify token
-    public Jwt parse(String token) {
-        return decoder.decode(token);
+    public String createPasswordResetToken(Long userId) {
+        Instant now = Instant.now();
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer(issuer)
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(resetTtlSeconds))
+                .subject(String.valueOf(userId))
+                .claim("purpose", "PWD_RESET")
+                .build();
+
+        return encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+    }
+
+    public Long verifyPasswordResetToken(String token) {
+        Jwt jwt = decoder.decode(token);
+        String purpose = jwt.getClaimAsString("purpose");
+        if (!"PWD_RESET".equals(purpose)) {
+            throw new JwtException("Invalid token purpose");
+        }
+        return Long.valueOf(jwt.getSubject());
+    }
+
+    public void revokeToken(String token) {
+        try {
+            Jwt jwt = decoder.decode(token);
+            Instant exp = jwt.getExpiresAt();
+            revokedTokens.put(token, exp != null ? exp : Instant.now().plus(Duration.ofHours(1)));
+        } catch (JwtException e) {
+            revokedTokens.put(token, Instant.now().plus(Duration.ofHours(1)));
+        }
+        cleanupRevoked();
+    }
+
+    public boolean isTokenRevoked(String token) {
+        Instant exp = revokedTokens.get(token);
+        if (exp == null) return false;
+        if (Instant.now().isAfter(exp)) {
+            revokedTokens.remove(token);
+            return false;
+        }
+        return true;
+    }
+
+    private void cleanupRevoked() {
+        Instant now = Instant.now();
+        revokedTokens.entrySet().removeIf(e -> now.isAfter(e.getValue()));
     }
 }

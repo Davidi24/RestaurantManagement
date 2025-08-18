@@ -2,7 +2,7 @@ package pos.pos.DTO;
 
 import java.util.Set;
 
-public record UserDto(
+public record UserResponse(
   Long id,
   String email,
   String firstName,

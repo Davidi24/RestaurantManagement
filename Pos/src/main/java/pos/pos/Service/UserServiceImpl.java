@@ -1,22 +1,16 @@
 package pos.pos.Service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import pos.pos.DTO.Mapper.UserMapper;
 import pos.pos.DTO.RegisterRequest;
-import pos.pos.DTO.UserDto;
-import pos.pos.Entity.Role;
+import pos.pos.DTO.UserResponse;
 import pos.pos.Entity.User;
 import pos.pos.Exeption.EmailAlreadyUsedException;
 import pos.pos.Repository.UserRepository;
-
-
-import java.nio.file.AccessDeniedException;
-import java.util.Set;
+import pos.pos.Service.Interfecaes.UserService;
 
 @Service
 @RequiredArgsConstructor
@@ -28,17 +22,11 @@ public class UserServiceImpl implements UserService {
 
   @Transactional
   @Override
-  public UserDto register(RegisterRequest req) {
-    if (repo.existsByEmail(req.email()))
+  public UserResponse register(RegisterRequest req) {
+    if (repo.existsByEmail(req.email())) {
       throw new EmailAlreadyUsedException(req.email());
-
-    var u = User.builder()
-            .email(req.email())
-            .passwordHash(encoder.encode(req.password()))
-            .firstName(req.firstName())
-            .lastName(req.lastName())
-            .roles(Set.of(req.role()))
-            .build();
+    }
+    User u = userMapper.toUser(req);
     u = repo.save(u);
     return userMapper.toUserDTO(u);
   }
@@ -49,13 +37,13 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public UserDto getByEmail(String email) {
+  public UserResponse getByEmail(String email) {
     User u = repo.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
     return userMapper.toUserDTO(u);
   }
 
   @Override
-  public UserDto getById(Long id) {
+  public UserResponse getById(Long id) {
     User u = repo.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
     return userMapper.toUserDTO(u);
   }

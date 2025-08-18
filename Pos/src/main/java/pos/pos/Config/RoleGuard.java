@@ -8,6 +8,7 @@ import pos.pos.Entity.Role;
 
 @Component
 public class RoleGuard {
+
     public boolean canCreate(Authentication auth, Role targetRole) {
         boolean isSuperAdmin = has(auth, "ROLE_SUPERADMIN");
         boolean isAdmin      = has(auth, "ROLE_ADMIN");
