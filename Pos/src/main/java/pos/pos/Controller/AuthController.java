@@ -34,7 +34,6 @@ public class AuthController {
         return ResponseEntity.ok(userService.register(req));
     }
 
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
         try {

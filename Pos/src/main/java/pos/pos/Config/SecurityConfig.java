@@ -34,7 +34,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/auth/login", "/auth/password/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/auth/logout", "/auth/register").authenticated()
-                    .requestMatchers("/users/**", "/orders/**", "/menu/**").authenticated()
+                    .requestMatchers("/users/**", "/orders/**", "/api/menus").authenticated()
                     .anyRequest().permitAll()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
