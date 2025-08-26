@@ -8,6 +8,7 @@ import pos.pos.DTO.MenuRequest;
 import pos.pos.DTO.MenuResponse;
 import pos.pos.DTO.MenuTreeResponse;
 import pos.pos.Entity.Menu.Menu;
+import pos.pos.Exeption.MenuNotFoundException;
 import pos.pos.Repository.MenuRepository;
 import pos.pos.Service.Interfecaes.MenuService;
 
@@ -42,14 +43,14 @@ public class MenuServiceImpl implements MenuService {
     @Transactional(readOnly = true)
     public MenuResponse get(Long id) {
         var menu = menuRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Menu not found"));
+                .orElseThrow(() -> new MenuNotFoundException(id));
         return MenuMapper.toResponse(menu);
     }
 
     @Override
     public MenuResponse patch(Long id, MenuRequest body) {
         var menu = menuRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Menu not found"));
+                .orElseThrow(() -> new MenuNotFoundException(id));
         if (body.name() != null) menu.setName(body.name());
         if (body.description() != null) menu.setDescription(body.description());
         return MenuMapper.toResponse(menuRepo.save(menu));
@@ -57,7 +58,7 @@ public class MenuServiceImpl implements MenuService {
 
     @Override
     public void delete(Long id) {
-        if (!menuRepo.existsById(id)) throw new IllegalArgumentException("Menu not found");
+        if (!menuRepo.existsById(id)) throw new MenuNotFoundException(id);
         menuRepo.deleteById(id);
     }
 
@@ -65,7 +66,7 @@ public class MenuServiceImpl implements MenuService {
     @Transactional(readOnly = true)
     public MenuTreeResponse tree(Long id) {
         var menu = menuRepo.findWithTreeById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Menu not found"));
+                .orElseThrow(() -> new MenuNotFoundException(id));
         return MenuMapper.toTreeResponse(menu);
     }
 }

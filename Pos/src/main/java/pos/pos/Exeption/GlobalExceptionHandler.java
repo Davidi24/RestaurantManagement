@@ -36,4 +36,13 @@ public class GlobalExceptionHandler {
 
     return ResponseEntity.badRequest().body(errors);
   }
+
+
+  @ExceptionHandler(MenuNotFoundException.class)
+  public ResponseEntity<Map<String, String>> handleMenuNotFound(MenuNotFoundException ex) {
+    Map<String, String> error = new HashMap<>();
+    error.put("error", "Menu Not Found");
+    error.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+  }
 }

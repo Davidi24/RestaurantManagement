@@ -1,4 +1,4 @@
-package pos.pos.api;
+package pos.pos.Controller.Menu;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
