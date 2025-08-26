@@ -1,8 +1,8 @@
 package pos.pos.Service.Interfecaes;
 
-import pos.pos.DTO.MenuSectionCreateRequest;
-import pos.pos.DTO.MenuSectionResponse;
-import pos.pos.DTO.MenuSectionUpdateRequest;
+import pos.pos.DTO.Menu.MenuSectionCreateRequest;
+import pos.pos.DTO.Menu.MenuSectionResponse;
+import pos.pos.DTO.Menu.MenuSectionUpdateRequest;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package pos.pos.DTO;
+package pos.pos.DTO.Menu;
 
 import java.math.BigDecimal;
 import java.util.List;

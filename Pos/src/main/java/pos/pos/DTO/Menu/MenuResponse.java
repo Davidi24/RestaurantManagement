@@ -1,4 +1,4 @@
-package pos.pos.DTO;
+package pos.pos.DTO.Menu;
 
 public record MenuResponse(
         Long id,

@@ -40,7 +40,8 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler({
           MenuNotFoundException.class,
-          MenuSectionNotFound.class
+          MenuSectionNotFound.class,
+          MenuItemExeption.class,
   })
   public ResponseEntity<Map<String, String>> handleNotFound(RuntimeException ex) {
     Map<String, String> error = new HashMap<>();

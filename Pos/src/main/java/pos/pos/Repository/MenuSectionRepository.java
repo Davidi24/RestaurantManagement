@@ -26,7 +26,6 @@ public interface MenuSectionRepository extends JpaRepository<MenuSection, Long> 
 
     long countByMenu_Id(Long menuId);
 
-    // 0-based index of the entity by counting how many come before its orderKey
     @Query("""
            SELECT COUNT(ms) FROM MenuSection ms
            WHERE ms.menu.id = :menuId AND ms.orderKey < :orderKey

@@ -1,8 +1,8 @@
 package pos.pos.DTO.Mapper;
 
 
-import pos.pos.DTO.MenuResponse;
-import pos.pos.DTO.MenuTreeResponse;
+import pos.pos.DTO.Menu.MenuResponse;
+import pos.pos.DTO.Menu.MenuTreeResponse;
 import pos.pos.Entity.Menu.Menu;
 import java.util.Comparator;
 import pos.pos.Entity.Menu.MenuSection;

@@ -5,9 +5,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import pos.pos.DTO.MenuRequest;
-import pos.pos.DTO.MenuResponse;
-import pos.pos.DTO.MenuTreeResponse;
+import pos.pos.DTO.Menu.MenuRequest;
+import pos.pos.DTO.Menu.MenuResponse;
+import pos.pos.DTO.Menu.MenuTreeResponse;
 import pos.pos.Service.Interfecaes.MenuService;
 
 

@@ -1,9 +1,9 @@
 package pos.pos.DTO.Mapper;
 
 import org.springframework.stereotype.Component;
-import pos.pos.DTO.MenuSectionCreateRequest;
-import pos.pos.DTO.MenuSectionResponse;
-import pos.pos.DTO.MenuSectionUpdateRequest;
+import pos.pos.DTO.Menu.MenuSectionCreateRequest;
+import pos.pos.DTO.Menu.MenuSectionResponse;
+import pos.pos.DTO.Menu.MenuSectionUpdateRequest;
 import pos.pos.Entity.Menu.MenuItem;
 import pos.pos.Entity.Menu.MenuSection;
 

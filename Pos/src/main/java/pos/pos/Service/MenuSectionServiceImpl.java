@@ -6,9 +6,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pos.pos.DTO.Mapper.MenuSectionMapper;
-import pos.pos.DTO.MenuSectionCreateRequest;
-import pos.pos.DTO.MenuSectionResponse;
-import pos.pos.DTO.MenuSectionUpdateRequest;
+import pos.pos.DTO.Menu.MenuSectionCreateRequest;
+import pos.pos.DTO.Menu.MenuSectionResponse;
+import pos.pos.DTO.Menu.MenuSectionUpdateRequest;
 import pos.pos.Entity.Menu.Menu;
 import pos.pos.Entity.Menu.MenuSection;
 import pos.pos.Exeption.AlreadyExistsException;
@@ -19,7 +19,6 @@ import pos.pos.Repository.MenuSectionRepository;
 import pos.pos.Service.Interfecaes.MenuSectionService;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,17 +30,11 @@ public class MenuSectionServiceImpl implements MenuSectionService {
     private final MenuSectionRepository sectionRepository;
     private final MenuSectionMapper mapper;
 
-    private static final BigDecimal STEP = new BigDecimal("1000");
-    private static final BigDecimal ONE = BigDecimal.ONE;
-    private static final int SCALE = 6;
-    private static final BigDecimal EPS = new BigDecimal("0.000001");
-
-
     @Override
     @Transactional(readOnly = true)
     public List<MenuSectionResponse> listSections(Long menuId) {
         var list = sectionRepository.findByMenu_IdOrderByOrderKeyAsc(menuId);
-        int[] i = {1}; // 1-based
+        int[] i = {1};
         return list.stream()
                 .map(s -> mapper.toMenuSectionResponse(s, i[0]++))
                 .toList();
@@ -57,34 +50,15 @@ public class MenuSectionServiceImpl implements MenuSectionService {
         }
 
         long count = sectionRepository.countByMenu_Id(menuId);
-        Integer target = req.sortOrder();
-        BigDecimal key;
 
-        if (count == 0) {
-            key = STEP;
-        } else {
-            int pos = (target == null)
-                    ? (int) count
-                    : Math.max(0, Math.min(target - 1, (int) count));
-
-            if (pos == 0) {
-                BigDecimal first = sectionRepository.findFirstByMenu_IdOrderByOrderKeyAsc(menuId).orElseThrow().getOrderKey();
-                key = first.subtract(ONE);
-            } else if (pos == count) {
-                BigDecimal last = sectionRepository.findFirstByMenu_IdOrderByOrderKeyDesc(menuId).orElseThrow().getOrderKey();
-                key = last.add(STEP);
-            } else {
-                BigDecimal left = nth(menuId, pos - 1).orElseThrow().getOrderKey();
-                BigDecimal right = nth(menuId, pos).orElseThrow().getOrderKey();
-                key = mid(left, right);
-                if (right.subtract(left).compareTo(EPS) <= 0) {
-                    sectionRepository.rebalance(menuId);
-                    left = nth(menuId, pos - 1).orElseThrow().getOrderKey();
-                    right = nth(menuId, pos).orElseThrow().getOrderKey();
-                    key = mid(left, right);
-                }
-            }
-        }
+        BigDecimal key = OrderingManger.computeInsertKeyDecimal(
+                req.sortOrder(),
+                count,
+                () -> sectionRepository.findFirstByMenu_IdOrderByOrderKeyAsc(menuId).orElseThrow().getOrderKey(),
+                () -> sectionRepository.findFirstByMenu_IdOrderByOrderKeyDesc(menuId).orElseThrow().getOrderKey(),
+                idx -> nth(menuId, idx).orElseThrow().getOrderKey(),
+                () -> sectionRepository.rebalance(menuId)
+        );
 
         MenuSection section = mapper.toMenuSection(req);
         section.setMenu(menu);
@@ -99,7 +73,7 @@ public class MenuSectionServiceImpl implements MenuSectionService {
     @Transactional
     public MenuSectionResponse updateSection(Long menuId, Long sectionId, MenuSectionUpdateRequest req) {
         MenuSection section = sectionRepository.findByIdAndMenu_Id(sectionId, menuId)
-                .orElseThrow(() -> new MenuSectionNotFound(sectionId));
+                .orElseThrow(() -> new MenuSectionNotFound(menuId,sectionId));
         if (!section.getName().equalsIgnoreCase(req.name())
                 && sectionRepository.existsByMenu_IdAndNameIgnoreCase(menuId, req.name())) {
             throw new AlreadyExistsException("Menu Section", req.name());
@@ -113,7 +87,7 @@ public class MenuSectionServiceImpl implements MenuSectionService {
     @Transactional
     public void deleteSection(Long menuId, Long sectionId) {
         MenuSection section = sectionRepository.findByIdAndMenu_Id(sectionId, menuId)
-                .orElseThrow(() -> new MenuSectionNotFound(sectionId));
+                .orElseThrow(() -> new MenuSectionNotFound(menuId,sectionId));
         sectionRepository.delete(section);
     }
 
@@ -121,52 +95,31 @@ public class MenuSectionServiceImpl implements MenuSectionService {
     @Transactional
     public MenuSectionResponse moveSection(Long menuId, Long sectionId, int newSortOrder) {
         MenuSection section = sectionRepository.findByIdAndMenu_Id(sectionId, menuId)
-                .orElseThrow(() -> new MenuSectionNotFound(sectionId));
+                .orElseThrow(() -> new MenuSectionNotFound(menuId,sectionId));
 
         long total = Math.max(0, sectionRepository.countByMenu_Id(menuId) - 1);
-        int pos = Math.max(0, Math.min(newSortOrder - 1, (int) total));
 
-        BigDecimal key;
-
-        if (total == 0) {
-            key = STEP;
-        } else if (pos == 0) {
-            BigDecimal first = nthExcluding(menuId, sectionId, 0).orElseThrow().getOrderKey();
-            key = first.subtract(ONE);
-        } else if (pos == total) {
-            BigDecimal last = sectionRepository.findFirstByMenu_IdOrderByOrderKeyDesc(menuId).orElseThrow().getOrderKey();
-            if (section.getOrderKey() != null && last.compareTo(section.getOrderKey()) == 0) {
-                key = last; // already last
-            } else {
-                key = last.add(STEP);
-            }
-        } else {
-            BigDecimal left = nthExcluding(menuId, sectionId, pos - 1).orElseThrow().getOrderKey();
-            BigDecimal right = nthExcluding(menuId, sectionId, pos).orElseThrow().getOrderKey();
-            key = mid(left, right);
-            if (right.subtract(left).compareTo(EPS) <= 0) {
-                sectionRepository.rebalance(menuId);
-                left = nthExcluding(menuId, sectionId, pos - 1).orElseThrow().getOrderKey();
-                right = nthExcluding(menuId, sectionId, pos).orElseThrow().getOrderKey();
-                key = mid(left, right);
-            }
-        }
+        BigDecimal key = OrderingManger.computeMoveKeyDecimal(
+                newSortOrder,
+                total,
+                () -> nthExcluding(menuId, sectionId, 0).orElseThrow().getOrderKey(),
+                () -> sectionRepository.findFirstByMenu_IdOrderByOrderKeyDesc(menuId).orElseThrow().getOrderKey(),
+                idx -> nthExcluding(menuId, sectionId, idx).orElseThrow().getOrderKey(),
+                () -> sectionRepository.rebalance(menuId),
+                section.getOrderKey()
+        );
 
         section.setOrderKey(key);
         section = sectionRepository.save(section);
-        return toResponse(section); // returns 1-based position
+        return toResponse(section);
     }
 
     @Override
     @Transactional(readOnly = true)
     public MenuSectionResponse getSection(Long menuId, Long sectionId) {
         MenuSection section = sectionRepository.findByIdAndMenu_Id(sectionId, menuId)
-                .orElseThrow(() -> new MenuSectionNotFound(sectionId));
+                .orElseThrow(() -> new MenuSectionNotFound(menuId,sectionId));
         return toResponse(section);
-    }
-
-    private BigDecimal mid(BigDecimal a, BigDecimal b) {
-        return a.add(b).divide(new BigDecimal("2"), SCALE, RoundingMode.HALF_UP);
     }
 
     private Optional<MenuSection> nth(Long menuId, int index) {
@@ -189,3 +142,4 @@ public class MenuSectionServiceImpl implements MenuSectionService {
         return mapper.toMenuSectionResponse(s, position1Based);
     }
 }
+
