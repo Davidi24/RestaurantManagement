@@ -1,12 +1,14 @@
 package pos.pos.DTO;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public record MenuSectionResponse(
         Long id,
         String name,
-        Integer sortOrder,
-        List<MenuItemSummary> items // lightweight summary to avoid heavy fetch
+        Integer position,
+        BigDecimal orderKey,
+        List<MenuItemSummary> items
 ) {
     public record MenuItemSummary(Long id, String name, Integer sortOrder) {}
 }

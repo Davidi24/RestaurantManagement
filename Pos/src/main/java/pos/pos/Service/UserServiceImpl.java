@@ -8,7 +8,7 @@ import pos.pos.DTO.Mapper.UserMapper;
 import pos.pos.DTO.RegisterRequest;
 import pos.pos.DTO.UserResponse;
 import pos.pos.Entity.User;
-import pos.pos.Exeption.EmailAlreadyUsedException;
+import pos.pos.Exeption.AlreadyExistsException;
 import pos.pos.Repository.UserRepository;
 import pos.pos.Service.Interfecaes.UserService;
 
@@ -24,7 +24,7 @@ public class UserServiceImpl implements UserService {
   @Override
   public UserResponse register(RegisterRequest req) {
     if (repo.existsByEmail(req.email())) {
-      throw new EmailAlreadyUsedException(req.email());
+      throw new AlreadyExistsException("Email",req.email());
     }
     User u = userMapper.toUser(req);
     u = repo.save(u);

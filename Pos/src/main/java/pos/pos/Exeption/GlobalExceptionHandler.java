@@ -12,9 +12,9 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-  @ExceptionHandler(EmailAlreadyUsedException.class)
-  public ResponseEntity<?> handleEmail(EmailAlreadyUsedException ex) {
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler({AlreadyExistsException.class , })
+  public ResponseEntity<?> handleEmail(AlreadyExistsException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT)
             .body(Map.of("error", ex.getMessage()));
   }
 
@@ -38,11 +38,15 @@ public class GlobalExceptionHandler {
   }
 
 
-  @ExceptionHandler(MenuNotFoundException.class)
-  public ResponseEntity<Map<String, String>> handleMenuNotFound(MenuNotFoundException ex) {
+  @ExceptionHandler({
+          MenuNotFoundException.class,
+          MenuSectionNotFound.class
+  })
+  public ResponseEntity<Map<String, String>> handleNotFound(RuntimeException ex) {
     Map<String, String> error = new HashMap<>();
-    error.put("error", "Menu Not Found");
+    error.put("error", ex.getClass().getSimpleName().replace("Exception", ""));
     error.put("message", ex.getMessage());
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
   }
+
 }
