@@ -42,6 +42,7 @@ public class GlobalExceptionHandler {
           MenuNotFoundException.class,
           MenuSectionNotFound.class,
           MenuItemExeption.class,
+          ItemVariantNotFound.class
   })
   public ResponseEntity<Map<String, String>> handleNotFound(RuntimeException ex) {
     Map<String, String> error = new HashMap<>();

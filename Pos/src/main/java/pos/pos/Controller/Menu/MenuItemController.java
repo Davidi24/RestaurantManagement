@@ -3,10 +3,9 @@ package pos.pos.Controller.Menu;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import pos.pos.DTO.*;
-import pos.pos.DTO.Menu.MenuItemCreateRequest;
-import pos.pos.DTO.Menu.MenuItemResponse;
-import pos.pos.DTO.Menu.MenuItemUpdateRequest;
+import pos.pos.DTO.Menu.MenuItemDTO.MenuItemCreateRequest;
+import pos.pos.DTO.Menu.MenuItemDTO.MenuItemResponse;
+import pos.pos.DTO.Menu.MenuItemDTO.MenuItemUpdateRequest;
 import pos.pos.Service.Interfecaes.MenuItemService;
 
 import java.util.List;

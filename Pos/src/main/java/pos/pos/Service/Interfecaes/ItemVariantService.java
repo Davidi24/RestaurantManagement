@@ -1,8 +1,8 @@
 package pos.pos.Service.Interfecaes;
 
-import pos.pos.DTO.Menu.ItemVariantCreateRequest;
-import pos.pos.DTO.Menu.ItemVariantResponse;
-import pos.pos.DTO.Menu.ItemVariantUpdateRequest;
+import pos.pos.DTO.Menu.VariantDTO.ItemVariantCreateRequest;
+import pos.pos.DTO.Menu.VariantDTO.ItemVariantResponse;
+import pos.pos.DTO.Menu.VariantDTO.ItemVariantUpdateRequest;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package pos.pos.DTO.Menu;
+package pos.pos.DTO.Menu.VariantDTO;
 
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;

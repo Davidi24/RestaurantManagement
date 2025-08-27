@@ -1,4 +1,4 @@
-package pos.pos.DTO.Menu;
+package pos.pos.DTO.Menu.MenuSectionDTO;
 
 import jakarta.validation.constraints.*;
 

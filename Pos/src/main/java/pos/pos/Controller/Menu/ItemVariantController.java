@@ -5,9 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
-import pos.pos.DTO.Menu.ItemVariantCreateRequest;
-import pos.pos.DTO.Menu.ItemVariantResponse;
-import pos.pos.DTO.Menu.ItemVariantUpdateRequest;
+import pos.pos.DTO.Menu.VariantDTO.ItemVariantCreateRequest;
+import pos.pos.DTO.Menu.VariantDTO.ItemVariantResponse;
+import pos.pos.DTO.Menu.VariantDTO.ItemVariantUpdateRequest;
 import pos.pos.Service.Interfecaes.ItemVariantService;
 
 import java.net.URI;

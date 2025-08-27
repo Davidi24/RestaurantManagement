@@ -1,4 +1,6 @@
-package pos.pos.DTO.Menu;
+package pos.pos.DTO.Menu.MenuSectionDTO;
+
+import pos.pos.DTO.Menu.MenuItemDTO.MenuItemResponse;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -8,7 +10,6 @@ public record MenuSectionResponse(
         String name,
         Integer position,
         BigDecimal orderKey,
-        List<MenuItemSummary> items
+        List<MenuItemResponse> items
 ) {
-    public record MenuItemSummary(Long id, String name, Integer sortOrder) {}
 }

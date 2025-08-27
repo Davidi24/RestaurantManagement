@@ -1,4 +1,4 @@
-package pos.pos.DTO.Menu;
+package pos.pos.DTO.Menu.MenuItemDTO;
 
 public record MenuItemRequest(
         String name,

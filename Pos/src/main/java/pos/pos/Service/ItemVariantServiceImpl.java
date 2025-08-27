@@ -4,14 +4,14 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import pos.pos.DTO.Mapper.ItemVariantMapper;
-import pos.pos.DTO.Menu.ItemVariantCreateRequest;
-import pos.pos.DTO.Menu.ItemVariantResponse;
-import pos.pos.DTO.Menu.ItemVariantUpdateRequest;
+import pos.pos.DTO.Menu.VariantDTO.ItemVariantCreateRequest;
+import pos.pos.DTO.Menu.VariantDTO.ItemVariantResponse;
+import pos.pos.DTO.Menu.VariantDTO.ItemVariantUpdateRequest;
 import pos.pos.Entity.Menu.ItemVariant;
 import pos.pos.Entity.Menu.MenuItem;
 import pos.pos.Exeption.AlreadyExistsException;
+import pos.pos.Exeption.ItemVariantNotFound;
 import pos.pos.Exeption.MenuItemExeption;
-import pos.pos.Exeption.MenuNotFoundException;
 import pos.pos.Exeption.MenuSectionNotFound;
 import pos.pos.Repository.ItemVariantRepository;
 import pos.pos.Repository.MenuItemRepository;
@@ -26,16 +26,6 @@ public class ItemVariantServiceImpl implements pos.pos.Service.Interfecaes.ItemV
     private final ItemVariantRepository variantRepository;
     private final ItemVariantMapper mapper;
 
-    /** Ensures the path (menuId -> sectionId -> itemId) is consistent and returns the MenuItem */
-    private MenuItem loadItemOrThrow(Long menuId, Long sectionId, Long itemId) {
-        MenuItem item = itemRepository.findByIdAndSection_Id(itemId, sectionId)
-                .orElseThrow(() -> new MenuSectionNotFound(menuId, sectionId));
-        if (item.getSection() == null || item.getSection().getMenu() == null || !item.getSection().getMenu().getId().equals(menuId)) {
-            throw new MenuItemExeption(menuId, sectionId, itemId);
-        }
-        return item;
-    }
-
     @Override
     @Transactional
     public List<ItemVariantResponse> listVariants(Long menuId, Long sectionId, Long itemId) {
@@ -49,7 +39,7 @@ public class ItemVariantServiceImpl implements pos.pos.Service.Interfecaes.ItemV
     public ItemVariantResponse getVariant(Long menuId, Long sectionId, Long itemId, Long variantId) {
         loadItemOrThrow(menuId, sectionId, itemId);
         ItemVariant variant = variantRepository.findByIdAndItem_Id(variantId, itemId)
-                .orElseThrow(() -> new MenuItemExeption(menuId, sectionId, itemId));
+                .orElseThrow(() -> new ItemVariantNotFound(menuId, sectionId, itemId, variantId));
         return mapper.toResponse(variant);
     }
 
@@ -58,7 +48,6 @@ public class ItemVariantServiceImpl implements pos.pos.Service.Interfecaes.ItemV
     public ItemVariantResponse createVariant(Long menuId, Long sectionId, Long itemId, ItemVariantCreateRequest request) {
         MenuItem item = loadItemOrThrow(menuId, sectionId, itemId);
 
-        // Unique name per item (case-insensitive)
         if (request.name() != null && variantRepository.existsByItem_IdAndNameIgnoreCase(itemId, request.name())) {
             throw new AlreadyExistsException("Menu variant ", request.name());
         }
@@ -85,7 +74,6 @@ public class ItemVariantServiceImpl implements pos.pos.Service.Interfecaes.ItemV
         ItemVariant entity = variantRepository.findByIdAndItem_Id(variantId, itemId)
                 .orElseThrow(() -> new MenuItemExeption(menuId, sectionId, itemId));
 
-        // Name uniqueness (only when changing)
         if (request.name() != null && !request.name().equalsIgnoreCase(entity.getName())
                 && variantRepository.existsByItem_IdAndNameIgnoreCase(itemId, request.name())) {
             throw new AlreadyExistsException("Menu variant ", request.name());
@@ -96,7 +84,6 @@ public class ItemVariantServiceImpl implements pos.pos.Service.Interfecaes.ItemV
             variantRepository.clearDefaultForItem(itemId);
         }
 
-        // Apply field updates
         mapper.updateEntity(entity, request);
 
         ItemVariant saved = variantRepository.save(entity);
@@ -112,5 +99,15 @@ public class ItemVariantServiceImpl implements pos.pos.Service.Interfecaes.ItemV
                 .orElseThrow(() -> new MenuItemExeption(menuId, sectionId, itemId));
 
         variantRepository.delete(entity);
+    }
+
+
+    private MenuItem loadItemOrThrow(Long menuId, Long sectionId, Long itemId) {
+        MenuItem item = itemRepository.findByIdAndSection_Id(itemId, sectionId)
+                .orElseThrow(() -> new MenuSectionNotFound(menuId, sectionId));
+        if (item.getSection() == null || item.getSection().getMenu() == null || !item.getSection().getMenu().getId().equals(menuId)) {
+            throw new MenuItemExeption(menuId, sectionId, itemId);
+        }
+        return item;
     }
 }

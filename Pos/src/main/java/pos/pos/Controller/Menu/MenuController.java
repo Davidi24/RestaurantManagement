@@ -5,9 +5,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import pos.pos.DTO.Menu.MenuRequest;
-import pos.pos.DTO.Menu.MenuResponse;
-import pos.pos.DTO.Menu.MenuTreeResponse;
+import pos.pos.DTO.Menu.MenuDTO.MenuRequest;
+import pos.pos.DTO.Menu.MenuDTO.MenuResponse;
+import pos.pos.DTO.Menu.MenuDTO.MenuTreeResponse;
 import pos.pos.Service.Interfecaes.MenuService;
 
 
@@ -47,7 +47,7 @@ public class MenuController {
         return ResponseEntity.noContent().build();
     }
 
-    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','SUPERADMIN')")
+//    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','SUPERADMIN')")
     @GetMapping("/{id}/tree")
     public MenuTreeResponse tree(@PathVariable Long id) {
         return menuService.tree(id);

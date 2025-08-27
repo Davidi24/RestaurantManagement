@@ -1,10 +1,9 @@
 package pos.pos.DTO.Mapper;
 
 import org.springframework.stereotype.Component;
-import pos.pos.DTO.*;
-import pos.pos.DTO.Menu.ItemVariantCreateRequest;
-import pos.pos.DTO.Menu.ItemVariantResponse;
-import pos.pos.DTO.Menu.ItemVariantUpdateRequest;
+import pos.pos.DTO.Menu.VariantDTO.ItemVariantCreateRequest;
+import pos.pos.DTO.Menu.VariantDTO.ItemVariantResponse;
+import pos.pos.DTO.Menu.VariantDTO.ItemVariantUpdateRequest;
 import pos.pos.Entity.Menu.ItemVariant;
 import pos.pos.Entity.Menu.MenuItem;
 

@@ -5,9 +5,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import pos.pos.DTO.Menu.MenuSectionCreateRequest;
-import pos.pos.DTO.Menu.MenuSectionResponse;
-import pos.pos.DTO.Menu.MenuSectionUpdateRequest;
+import pos.pos.DTO.Menu.MenuSectionDTO.MenuSectionCreateRequest;
+import pos.pos.DTO.Menu.MenuSectionDTO.MenuSectionResponse;
+import pos.pos.DTO.Menu.MenuSectionDTO.MenuSectionUpdateRequest;
 import pos.pos.Service.Interfecaes.MenuSectionService;
 
 
