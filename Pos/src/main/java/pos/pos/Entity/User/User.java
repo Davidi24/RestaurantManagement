@@ -1,4 +1,4 @@
-package pos.pos.Entity;
+package pos.pos.Entity.User;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;

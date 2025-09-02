@@ -1,4 +1,4 @@
-package pos.pos.Entity;
+package pos.pos.Entity.User;
 
 public enum Role {
   USER,

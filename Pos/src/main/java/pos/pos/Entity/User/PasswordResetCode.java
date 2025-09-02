@@ -1,8 +1,9 @@
 // Entity
-package pos.pos.Entity;
+package pos.pos.Entity.User;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.Instant;
 
 @Entity

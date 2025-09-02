@@ -4,7 +4,7 @@ package pos.pos.Config;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
-import pos.pos.Entity.Role;
+import pos.pos.Entity.User.Role;
 
 @Component
 public class RoleGuard {

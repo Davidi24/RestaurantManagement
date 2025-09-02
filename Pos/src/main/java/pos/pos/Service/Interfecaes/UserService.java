@@ -3,7 +3,7 @@ package pos.pos.Service.Interfecaes;
 
 import pos.pos.DTO.RegisterRequest;
 import pos.pos.DTO.UserResponse;
-import pos.pos.Entity.User;
+import pos.pos.Entity.User.User;
 
 public interface UserService {
   UserResponse register(RegisterRequest req);

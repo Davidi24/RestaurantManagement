@@ -9,7 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pos.pos.Config.JWT.JwtService;
-import pos.pos.Entity.PasswordResetCode;
+import pos.pos.Entity.User.PasswordResetCode;
 import pos.pos.Repository.PasswordResetCodeRepository;
 import pos.pos.Repository.UserRepository;
 

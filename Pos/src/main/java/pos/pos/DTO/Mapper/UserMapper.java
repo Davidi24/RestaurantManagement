@@ -5,8 +5,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import pos.pos.DTO.RegisterRequest;
 import pos.pos.DTO.UserResponse;
-import pos.pos.Entity.Role;
-import pos.pos.Entity.User;
+import pos.pos.Entity.User.Role;
+import pos.pos.Entity.User.User;
 
 import java.util.Set;
 import java.util.stream.Collectors;

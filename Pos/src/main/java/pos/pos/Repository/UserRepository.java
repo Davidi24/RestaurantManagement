@@ -1,8 +1,7 @@
 package pos.pos.Repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import pos.pos.Entity.User;
+import pos.pos.Entity.User.User;
 
 import java.util.Optional;
 

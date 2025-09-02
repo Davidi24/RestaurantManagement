@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pos.pos.DTO.Mapper.UserMapper;
 import pos.pos.DTO.RegisterRequest;
 import pos.pos.DTO.UserResponse;
-import pos.pos.Entity.User;
+import pos.pos.Entity.User.User;
 import pos.pos.Exeption.AlreadyExistsException;
 import pos.pos.Repository.UserRepository;
 import pos.pos.Service.Interfecaes.UserService;

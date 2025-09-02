@@ -8,7 +8,7 @@ import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemUpdateDTO;
 import java.util.List;
 
 public interface OrderLineItemService {
-    OrderLineItemResponseDTO addLineItem(Long orderId, OrderLineItemCreateDTO dto);
+    OrderLineItemResponseDTO addLineItem(Long orderId, OrderLineItemCreateDTO dto, String userEmail);
     OrderLineItemResponseDTO updateLineItem(Long orderId, OrderLineItemUpdateDTO dto);
     List<OrderLineItemResponseDTO> getLineItems(Long orderId);
     void deleteLineItem(Long orderId, Long lineItemId);
