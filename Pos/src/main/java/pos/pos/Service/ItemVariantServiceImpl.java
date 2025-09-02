@@ -11,7 +11,7 @@ import pos.pos.Entity.Menu.ItemVariant;
 import pos.pos.Entity.Menu.MenuItem;
 import pos.pos.Exeption.AlreadyExistsException;
 import pos.pos.Exeption.ItemVariantNotFound;
-import pos.pos.Exeption.MenuItemExeption;
+import pos.pos.Exeption.MenuItemException;
 import pos.pos.Exeption.MenuSectionNotFound;
 import pos.pos.Repository.ItemVariantRepository;
 import pos.pos.Repository.MenuItemRepository;
@@ -72,7 +72,7 @@ public class ItemVariantServiceImpl implements pos.pos.Service.Interfecaes.ItemV
         loadItemOrThrow(menuId, sectionId, itemId);
 
         ItemVariant entity = variantRepository.findByIdAndItem_Id(variantId, itemId)
-                .orElseThrow(() -> new MenuItemExeption(menuId, sectionId, itemId));
+                .orElseThrow(() -> new MenuItemException(menuId, sectionId, itemId));
 
         if (request.name() != null && !request.name().equalsIgnoreCase(entity.getName())
                 && variantRepository.existsByItem_IdAndNameIgnoreCase(itemId, request.name())) {
@@ -96,7 +96,7 @@ public class ItemVariantServiceImpl implements pos.pos.Service.Interfecaes.ItemV
         loadItemOrThrow(menuId, sectionId, itemId);
 
         ItemVariant entity = variantRepository.findByIdAndItem_Id(variantId, itemId)
-                .orElseThrow(() -> new MenuItemExeption(menuId, sectionId, itemId));
+                .orElseThrow(() -> new MenuItemException(menuId, sectionId, itemId));
 
         variantRepository.delete(entity);
     }
@@ -106,7 +106,7 @@ public class ItemVariantServiceImpl implements pos.pos.Service.Interfecaes.ItemV
         MenuItem item = itemRepository.findByIdAndSection_Id(itemId, sectionId)
                 .orElseThrow(() -> new MenuSectionNotFound(menuId, sectionId));
         if (item.getSection() == null || item.getSection().getMenu() == null || !item.getSection().getMenu().getId().equals(menuId)) {
-            throw new MenuItemExeption(menuId, sectionId, itemId);
+            throw new MenuItemException(menuId, sectionId, itemId);
         }
         return item;
     }

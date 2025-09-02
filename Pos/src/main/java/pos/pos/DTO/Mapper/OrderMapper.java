@@ -5,6 +5,8 @@ import org.springframework.stereotype.Component;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderCreateDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderResponseDTO;
 import pos.pos.Entity.Order.Order;
+import pos.pos.Entity.Order.OrderStatus;
+import pos.pos.Entity.Order.OrderType;
 
 @Component
 @RequiredArgsConstructor
@@ -14,12 +16,9 @@ public class OrderMapper {
 
     public Order toOrder(OrderCreateDTO dto) {
         return Order.builder()
-                .staffId(dto.getStaffId())
                 .tableId(dto.getTableId())
-                .customerId(dto.getCustomerId())
-                .notes(dto.getNotes())
-                .status(pos.pos.Entity.Order.OrderStatus.OPEN)
-                .type(pos.pos.Entity.Order.OrderType.DINE_IN)
+                .status(OrderStatus.OPEN)
+                .type(OrderType.DINE_IN)
                 .build();
     }
 
@@ -31,7 +30,7 @@ public class OrderMapper {
                 .type(order.getType().name())
                 .openedAt(order.getOpenedAt())
                 .closedAt(order.getClosedAt())
-                .staffId(order.getStaffId())
+                .userEmail(order.getUserEmail())
                 .tableId(order.getTableId())
                 .customerId(order.getCustomerId())
                 .notes(order.getNotes())

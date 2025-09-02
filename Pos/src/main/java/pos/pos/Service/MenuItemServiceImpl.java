@@ -10,7 +10,7 @@ import pos.pos.DTO.Menu.MenuItemDTO.MenuItemUpdateRequest;
 import pos.pos.Entity.Menu.MenuItem;
 import pos.pos.Entity.Menu.MenuSection;
 import pos.pos.Exeption.AlreadyExistsException;
-import pos.pos.Exeption.MenuItemExeption;
+import pos.pos.Exeption.MenuItemException;
 import pos.pos.Exeption.MenuSectionNotFound;
 import pos.pos.Repository.MenuItemRepository;
 import pos.pos.Repository.MenuSectionRepository;
@@ -65,7 +65,7 @@ public class MenuItemServiceImpl implements MenuItemService {
         requireSection(menuId, sectionId);
 
         MenuItem item = itemRepository.findByIdAndSection_Id(itemId, sectionId)
-                .orElseThrow(() -> new MenuItemExeption(menuId,sectionId, itemId));
+                .orElseThrow(() -> new MenuItemException(menuId,sectionId, itemId));
 
         if (!item.getName().equalsIgnoreCase(req.name())
                 && itemRepository.existsBySection_IdAndNameIgnoreCase(sectionId, req.name())) {
@@ -91,7 +91,7 @@ public class MenuItemServiceImpl implements MenuItemService {
         requireSection(menuId, sectionId);
 
         MenuItem item = itemRepository.findByIdAndSection_Id(itemId, sectionId)
-                .orElseThrow(() -> new MenuItemExeption(menuId,sectionId, itemId));
+                .orElseThrow(() -> new MenuItemException(menuId,sectionId, itemId));
 
         int oldPos = item.getSortOrder();
         itemRepository.delete(item);
@@ -104,7 +104,7 @@ public class MenuItemServiceImpl implements MenuItemService {
         requireSection(menuId, sectionId);
 
         MenuItem item = itemRepository.findByIdAndSection_Id(itemId, sectionId)
-                .orElseThrow(() -> new MenuItemExeption(menuId,sectionId, itemId));
+                .orElseThrow(() -> new MenuItemException(menuId,sectionId, itemId));
 
         long count = itemRepository.countBySection_Id(sectionId);
         int newPos = OrderingManger.clamp(newSortOrder, 1, (int) count);

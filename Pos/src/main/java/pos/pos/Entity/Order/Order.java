@@ -15,7 +15,7 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String orderNumber; // e.g., "T7-1042"
+    private String orderNumber;
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
@@ -26,7 +26,7 @@ public class Order {
     private LocalDateTime openedAt;
     private LocalDateTime closedAt;
 
-    private Long staffId;
+    private String userEmail;
     private Long tableId;
     private Long customerId;
 

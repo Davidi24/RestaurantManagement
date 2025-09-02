@@ -10,7 +10,7 @@ import pos.pos.DTO.Menu.OptionDTO.OptionGroupUpdateRequest;
 import pos.pos.Entity.Menu.MenuItem;
 import pos.pos.Entity.Menu.OptionGroup;
 import pos.pos.Entity.Menu.MenuSection;
-import pos.pos.Exeption.MenuItemExeption;
+import pos.pos.Exeption.MenuItemException;
 import pos.pos.Exeption.MenuSectionNotFound;
 import pos.pos.Exeption.OptionGroupNotFoundException;
 import pos.pos.Repository.MenuItemRepository;
@@ -94,6 +94,6 @@ public class OptionGroupServiceImpl implements OptionGroupService {
                 .orElseThrow(() -> new MenuSectionNotFound(menuId, sectionId));
 
         return itemRepo.findByIdAndSection_Id(itemId, section.getId())
-                .orElseThrow(() -> new MenuItemExeption(menuId, sectionId, itemId));
+                .orElseThrow(() -> new MenuItemException(menuId, sectionId, itemId));
     }
 }

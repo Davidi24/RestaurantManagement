@@ -1,12 +1,10 @@
 package pos.pos.DTO.Order.OrderCollectorDTO;
 
-
 import lombok.*;
+import pos.pos.Entity.Order.OrderStatus;
 
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor @Builder
-public class OrderUpdateDTO {
-    private Long id;
-    private String notes;
-    private Long tableId;
+public class OrderStatusUpdateDTO {
+    private OrderStatus status;
 }

@@ -16,7 +16,7 @@ public class OrderEvent {
     @Enumerated(EnumType.STRING)
     private OrderEventType type;
 
-    private Long actorId;
+    private String staffEmail;
     private LocalDateTime timestamp;
     private String metadata;
 

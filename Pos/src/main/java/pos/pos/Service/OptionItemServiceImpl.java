@@ -11,7 +11,7 @@ import pos.pos.Entity.Menu.MenuItem;
 import pos.pos.Entity.Menu.OptionGroup;
 import pos.pos.Entity.Menu.OptionItem;
 import pos.pos.Entity.Menu.MenuSection;
-import pos.pos.Exeption.MenuItemExeption;
+import pos.pos.Exeption.MenuItemException;
 import pos.pos.Exeption.MenuSectionNotFound;
 import pos.pos.Exeption.OptionGroupNotFoundException;
 import pos.pos.Exeption.OptionItemNotFoundException;
@@ -96,7 +96,7 @@ public class OptionItemServiceImpl implements OptionItemService {
                 .orElseThrow(() -> new MenuSectionNotFound(menuId, sectionId));
 
         MenuItem item = itemRepo.findByIdAndSection_Id(itemId, section.getId())
-                .orElseThrow(() -> new MenuItemExeption(menuId, sectionId, itemId));
+                .orElseThrow(() -> new MenuItemException(menuId, sectionId, itemId));
 
         return groupRepo.findByIdAndItem_Id(groupId, item.getId())
                 .orElseThrow(() -> new OptionGroupNotFoundException(menuId, sectionId, itemId, groupId));

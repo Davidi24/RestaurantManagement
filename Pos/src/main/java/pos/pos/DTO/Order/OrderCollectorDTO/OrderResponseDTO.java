@@ -15,7 +15,7 @@ public class OrderResponseDTO {
     private String type;
     private LocalDateTime openedAt;
     private LocalDateTime closedAt;
-    private Long staffId;
+    private String userEmail;
     private Long tableId;
     private Long customerId;
     private String notes;
