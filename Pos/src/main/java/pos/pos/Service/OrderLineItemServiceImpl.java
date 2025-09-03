@@ -9,6 +9,7 @@ import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemResponseDTO;
 import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemUpdateDTO;
 import pos.pos.Entity.Order.Order;
 import pos.pos.Entity.Order.OrderEventType;
+import pos.pos.Entity.Order.OrderLineItem;
 import pos.pos.Exeption.LineItemOrderMismatchException;
 import pos.pos.Exeption.OrderItemNotFound;
 import pos.pos.Exeption.OrderNotFound;
@@ -28,18 +29,29 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
     private final OrderLineItemRepository lineItemRepository;
     private final OrderLineItemMapper lineItemMapper;
     private final OrderEventService orderEventService;
+    private final OrderSnapshotBuilder snapshotBuilder;
+    private final OrderPricingService pricingService;
 
     @Override
     public OrderLineItemResponseDTO addLineItem(Long orderId, OrderLineItemCreateDTO dto, String userEmail) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFound(orderId));
 
-        var lineItem = lineItemMapper.toOrderLineItem(dto, order);
+        OrderLineItem lineItem = lineItemMapper.toOrderLineItem(dto, order);
+        snapshotBuilder.enrichFromCatalog(lineItem, dto);
+        pricingService.priceLineItem(lineItem);
+
         lineItem = lineItemRepository.save(lineItem);
 
-        String metadata = "Added " + dto.getItemName() + " x" + dto.getQuantity() +
-                " (unit " + dto.getUnitPrice() + ")";
+        String unitStr = (lineItem.getVariantSnapshot() != null
+                && lineItem.getVariantSnapshot().getPriceOverride() != null)
+                ? String.valueOf(lineItem.getVariantSnapshot().getPriceOverride())
+                : String.valueOf(lineItem.getUnitPrice());
+
+        String metadata = "Added " + lineItem.getItemName() + " x" + lineItem.getQuantity() +
+                " (unit " + unitStr + ")";
         orderEventService.logEvent(order, OrderEventType.ITEM_ADDED, userEmail, metadata);
+
         return lineItemMapper.toOrderLineItemResponse(lineItem);
     }
 

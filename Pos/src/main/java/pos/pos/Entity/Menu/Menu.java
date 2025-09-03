@@ -2,10 +2,9 @@ package pos.pos.Entity.Menu;
 
 import jakarta.persistence.*;
 import lombok.*;
-import pos.pos.Entity.Menu.MenuSection;
-
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Getter @Setter
@@ -15,6 +14,9 @@ public class Menu {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, unique = true, updatable = false)
+    private UUID publicId;
 
     private String name;
     private String description;
@@ -29,4 +31,11 @@ public class Menu {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private List<MenuSection> sections = new ArrayList<>();
+
+    @PrePersist
+    private void ensurePublicId() {
+        if (publicId == null) {
+            publicId = UUID.randomUUID();
+        }
+    }
 }

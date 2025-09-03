@@ -1,9 +1,9 @@
 package pos.pos.Controller.Order;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import pos.pos.Config.AuthUtils;
 import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemCreateDTO;
@@ -24,19 +24,17 @@ public class OrderLineItemController {
     @PostMapping
     public ResponseEntity<OrderLineItemResponseDTO> createLineItem(
             @PathVariable Long orderId,
-            @RequestBody OrderLineItemCreateDTO dto,
-             Authentication authentication) {
-
+            @Valid @RequestBody OrderLineItemCreateDTO dto,
+            Authentication authentication) {
         String email = authUtils.getUserEmail(authentication);
         return ResponseEntity.ok(orderLineItemService.addLineItem(orderId, dto, email));
     }
-
 
     @PutMapping("/{lineItemId}")
     public ResponseEntity<OrderLineItemResponseDTO> updateLineItem(
             @PathVariable Long orderId,
             @PathVariable Long lineItemId,
-            @RequestBody OrderLineItemUpdateDTO dto) {
+            @Valid @RequestBody OrderLineItemUpdateDTO dto) {
         dto.setId(lineItemId);
         return ResponseEntity.ok(orderLineItemService.updateLineItem(orderId, dto));
     }

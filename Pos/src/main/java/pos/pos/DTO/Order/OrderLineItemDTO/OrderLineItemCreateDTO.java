@@ -1,18 +1,20 @@
 package pos.pos.DTO.Order.OrderLineItemDTO;
 
 import lombok.*;
-import pos.pos.DTO.Order.Snapshots.OrderOptionSnapshotDTO;
-import pos.pos.DTO.Order.Snapshots.OrderVariantSnapshotDTO;
-
+import jakarta.validation.constraints.*;
 import java.util.List;
+import java.util.UUID;
 
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor @Builder
 public class OrderLineItemCreateDTO {
-    private Long menuItemId;
-    private String itemName;
-    private Double unitPrice;
+    @NotNull
+    private UUID menuItemPublicId;
+
+    @NotNull
+    @Min(1)
     private Integer quantity;
-    private OrderVariantSnapshotDTO variantSnapshot;
-    private List<OrderOptionSnapshotDTO> optionSnapshots;
+
+    private UUID variantPublicId;
+    private List<UUID> optionPublicIds;
 }

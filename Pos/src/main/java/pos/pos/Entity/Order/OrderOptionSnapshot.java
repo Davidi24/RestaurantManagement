@@ -2,6 +2,7 @@ package pos.pos.Entity.Order;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.UUID;
 
 @Entity
 @Getter @Setter
@@ -12,7 +13,12 @@ public class OrderOptionSnapshot {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // legacy (keep during transition)
     private Long optionId;
+
+    // new global identifier
+    private UUID optionPublicId;
+
     private String optionName;
     private Double priceDelta;
 

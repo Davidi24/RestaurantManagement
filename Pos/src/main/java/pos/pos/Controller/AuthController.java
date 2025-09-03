@@ -1,6 +1,8 @@
 package pos.pos.Controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -54,7 +56,7 @@ public class AuthController {
     }
 
     @PostMapping("/password/forgot")
-    public ResponseEntity<?> forgot(@RequestParam("email") @jakarta.validation.constraints.Email @jakarta.validation.constraints.NotBlank String email) {
+    public ResponseEntity<?> forgot(@RequestParam("email") @Email @NotBlank String email) {
         passwordResetService.sendResetCode(email);
         return ResponseEntity.ok(Map.of("message", "If the email exists, a reset code was sent."));
     }

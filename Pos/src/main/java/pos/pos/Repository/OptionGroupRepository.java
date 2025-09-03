@@ -5,6 +5,7 @@ import pos.pos.Entity.Menu.OptionGroup;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface OptionGroupRepository extends JpaRepository<OptionGroup, Long> {
 
@@ -15,4 +16,14 @@ public interface OptionGroupRepository extends JpaRepository<OptionGroup, Long> 
     boolean existsByItem_IdAndNameIgnoreCase(Long itemId, String name);
 
     long countByItem_Id(Long itemId);
+
+    Optional<OptionGroup> findByPublicId(UUID publicId);
+
+    List<OptionGroup> findByItem_PublicIdOrderBySortOrderAscIdAsc(UUID itemPublicId);
+
+    Optional<OptionGroup> findByPublicIdAndItem_PublicId(UUID groupPublicId, UUID itemPublicId);
+
+    boolean existsByItem_PublicIdAndNameIgnoreCase(UUID itemPublicId, String name);
+
+    long countByItem_PublicId(UUID itemPublicId);
 }

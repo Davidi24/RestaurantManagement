@@ -6,6 +6,7 @@ import pos.pos.Entity.Menu.MenuItem;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
 
@@ -40,4 +41,13 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
     int shiftLeftRange(@Param("sectionId") Long sectionId,
                        @Param("startPos") int startPos,
                        @Param("endPos") int endPos);
+
+    Optional<MenuItem> findByPublicId(UUID publicId);
+
+    List<MenuItem> findBySection_PublicIdOrderBySortOrderAscIdAsc(UUID sectionPublicId);
+
+    Optional<MenuItem> findByPublicIdAndSection_PublicId(UUID itemPublicId, UUID sectionPublicId);
+
+    boolean existsBySection_PublicIdAndNameIgnoreCase(UUID sectionPublicId, String name);
+
 }

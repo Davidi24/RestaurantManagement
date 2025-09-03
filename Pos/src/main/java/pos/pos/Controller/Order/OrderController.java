@@ -12,10 +12,7 @@ import pos.pos.DTO.Order.OrderCollectorDTO.OrderStatusUpdateDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderUpdateDTO;
 import pos.pos.Service.Interfecaes.OrderService;
 
-
 import java.util.List;
-
-//TODO: Make a get orders, with pagination and date filter
 
 @RestController
 @RequestMapping("/api/orders")
@@ -32,7 +29,7 @@ public class OrderController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<OrderResponseDTO> updateOrder(@PathVariable Long id, @RequestBody OrderUpdateDTO dto) {
+    public ResponseEntity<OrderResponseDTO> updateOrder(@PathVariable Long id, @Valid @RequestBody OrderUpdateDTO dto) {
         return ResponseEntity.ok(orderService.updateOrder(id, dto));
     }
 
@@ -53,7 +50,7 @@ public class OrderController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<OrderResponseDTO> updateStatus(@PathVariable Long id, @RequestBody OrderStatusUpdateDTO dto) {
+    public ResponseEntity<OrderResponseDTO> updateStatus(@PathVariable Long id, @Valid @RequestBody OrderStatusUpdateDTO dto) {
         return ResponseEntity.ok(orderService.updateStatus(id, dto));
     }
 }

@@ -1,48 +1,23 @@
 package pos.pos.DTO.Mapper;
 
 import org.springframework.stereotype.Component;
-import pos.pos.DTO.Order.OrderLineItemDTO.*;
-import pos.pos.Entity.Order.*;
+import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemCreateDTO;
+import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemResponseDTO;
+import pos.pos.Entity.Order.FulfillmentStatus;
+import pos.pos.Entity.Order.Order;
+import pos.pos.Entity.Order.OrderLineItem;
 
 @Component
 public class OrderLineItemMapper {
-
     public OrderLineItem toOrderLineItem(OrderLineItemCreateDTO dto, Order order) {
-        var li = OrderLineItem.builder()
-                .menuItemId(dto.getMenuItemId())
-                .itemName(dto.getItemName())
-                .unitPrice(dto.getUnitPrice())
-                .quantity(dto.getQuantity())
-                .lineSubtotal(dto.getUnitPrice() * dto.getQuantity())
-                .lineGrandTotal(dto.getUnitPrice() * dto.getQuantity())
+        Integer qty = dto.getQuantity() != null ? dto.getQuantity() : 1;
+
+        return OrderLineItem.builder()
                 .order(order)
+                .quantity(qty)
+                .fulfillmentStatus(FulfillmentStatus.NEW)
+                .lineDiscount(0.0)
                 .build();
-
-        if (dto.getVariantSnapshot() != null) {
-            var v = dto.getVariantSnapshot();
-            var vs = OrderVariantSnapshot.builder()
-                    .variantId(v.getVariantId())
-                    .variantName(v.getVariantName())
-                    .priceOverride(v.getPriceOverride())
-                    .lineItem(li)
-                    .build();
-            li.setVariantSnapshot(vs);
-        }
-
-        if (dto.getOptionSnapshots() != null && !dto.getOptionSnapshots().isEmpty()) {
-            var list = new java.util.ArrayList<OrderOptionSnapshot>();
-            for (var o : dto.getOptionSnapshots()) {
-                list.add(OrderOptionSnapshot.builder()
-                        .optionId(o.getOptionId())
-                        .optionName(o.getOptionName())
-                        .priceDelta(o.getPriceDelta())
-                        .lineItem(li)
-                        .build());
-            }
-            li.setOptionSnapshots(list);
-        }
-
-        return li;
     }
 
     public OrderLineItemResponseDTO toOrderLineItemResponse(OrderLineItem entity) {
