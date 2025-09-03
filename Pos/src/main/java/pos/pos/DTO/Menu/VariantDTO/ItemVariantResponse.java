@@ -1,6 +1,7 @@
 package pos.pos.DTO.Menu.VariantDTO;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public record ItemVariantResponse(
         Long id,
@@ -8,5 +9,6 @@ public record ItemVariantResponse(
         BigDecimal priceOverride,
         boolean isDefault,
         Integer sortOrder,
-        Long itemId
+        Long itemId,
+        UUID publicId
 ) {}

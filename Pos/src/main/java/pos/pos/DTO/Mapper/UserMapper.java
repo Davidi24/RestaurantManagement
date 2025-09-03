@@ -3,8 +3,8 @@ package pos.pos.DTO.Mapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import pos.pos.DTO.RegisterRequest;
-import pos.pos.DTO.UserResponse;
+import pos.pos.DTO.User.RegisterRequest;
+import pos.pos.DTO.User.UserResponse;
 import pos.pos.Entity.User.Role;
 import pos.pos.Entity.User.User;
 

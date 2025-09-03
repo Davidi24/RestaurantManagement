@@ -1,4 +1,3 @@
-// RESPONSE — includes variants list
 package pos.pos.DTO.Menu.MenuItemDTO;
 
 import pos.pos.DTO.Menu.OptionDTO.OptionGroupResponse;
@@ -6,6 +5,7 @@ import pos.pos.DTO.Menu.VariantDTO.ItemVariantResponse;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 public record MenuItemResponse(
         Long id,
@@ -13,6 +13,7 @@ public record MenuItemResponse(
         BigDecimal basePrice,
         boolean available,
         Integer sortOrder,
+        UUID publicId,
         List<ItemVariantResponse> itemVariants,
         List<OptionGroupResponse> optionGroup
 ) {}
