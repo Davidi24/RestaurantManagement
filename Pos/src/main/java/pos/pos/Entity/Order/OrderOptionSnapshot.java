@@ -13,10 +13,8 @@ public class OrderOptionSnapshot {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // legacy (keep during transition)
     private Long optionId;
 
-    // new global identifier
     private UUID optionPublicId;
 
     private String optionName;
