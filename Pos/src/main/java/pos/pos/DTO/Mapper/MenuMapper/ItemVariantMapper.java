@@ -48,8 +48,5 @@ public class ItemVariantMapper {
         if (request.isDefault() != null) {
             entity.setDefault(request.isDefault());
         }
-        if (request.sortOrder() != null) {
-            entity.setSortOrder(request.sortOrder());
-        }
     }
 }

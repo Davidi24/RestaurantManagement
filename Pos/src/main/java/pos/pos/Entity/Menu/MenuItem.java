@@ -4,11 +4,20 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.UUID;
 
 @Entity
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor @Builder
+@Table(
+        name = "menu_item",
+        indexes = {
+                @Index(name = "ix_menu_item_sectionid", columnList = "section_id")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_menu_item_sectionid_sortorder", columnNames = {"section_id", "sortOrder"}),
+                @UniqueConstraint(name = "uq_menu_item_sectionid_name", columnNames = {"section_id", "name"})
+        }
+)
 public class MenuItem {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,10 +27,13 @@ public class MenuItem {
     private UUID publicId;
 
     private String name;
+
     @Builder.Default
     private BigDecimal basePrice = BigDecimal.ZERO;
+
     @Builder.Default
     private boolean available = true;
+
     @Builder.Default
     private Integer sortOrder = 0;
 

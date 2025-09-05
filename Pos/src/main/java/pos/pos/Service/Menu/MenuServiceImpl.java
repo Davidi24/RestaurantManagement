@@ -8,6 +8,7 @@ import pos.pos.DTO.Menu.MenuDTO.MenuRequest;
 import pos.pos.DTO.Menu.MenuDTO.MenuResponse;
 import pos.pos.DTO.Menu.MenuDTO.MenuTreeResponse;
 import pos.pos.Entity.Menu.Menu;
+import pos.pos.Exeption.AlreadyExistsException;
 import pos.pos.Exeption.MenuNotFoundException;
 import pos.pos.Repository.Menu.MenuRepository;
 import pos.pos.Service.Interfecaes.MenuService;
@@ -23,12 +24,12 @@ public class MenuServiceImpl implements MenuService {
     private final MenuMapper menuMapper;
 
     @Override
-    public MenuResponse create(MenuRequest body) {
-        var menu = Menu.builder()
-                .name(body.name())
-                .description(body.description())
-                .build();
-        return menuMapper.toResponse(menuRepo.save(menu));
+    public MenuResponse create(MenuRequest menuRequest) {
+        if (menuRepo.existsByName(menuRequest.name())) {
+            throw new AlreadyExistsException("Menu: ", menuRequest.name());
+        }
+        var menu = menuMapper.toMenu(menuRequest);
+        return menuMapper.toMenuResponse(menuRepo.save(menu));
     }
 
     @Override
@@ -36,7 +37,7 @@ public class MenuServiceImpl implements MenuService {
     public List<MenuResponse> list() {
         return menuRepo.findAll()
                 .stream()
-                .map(menuMapper::toResponse)
+                .map(menuMapper::toMenuResponse)
                 .toList();
     }
 
@@ -45,22 +46,23 @@ public class MenuServiceImpl implements MenuService {
     public MenuResponse get(Long id) {
         var menu = menuRepo.findById(id)
                 .orElseThrow(() -> new MenuNotFoundException(id));
-        return menuMapper.toResponse(menu);
+        return menuMapper.toMenuResponse(menu);
     }
 
     @Override
     public MenuResponse patch(Long id, MenuRequest body) {
-        var menu = menuRepo.findById(id)
-                .orElseThrow(() -> new MenuNotFoundException(id));
+        var menu = menuRepo.findById(id).orElseThrow(() -> new MenuNotFoundException(id));
 
         if (body.name() != null) {
-            menu.setName(body.name());
+            var name = body.name().trim();
+            if (!name.isEmpty()) menu.setName(name);
         }
         if (body.description() != null) {
-            menu.setDescription(body.description());
+            // allows empty description but not null
+            var desc = body.description().trim();
+            menu.setDescription(desc.isEmpty() ? null : desc);
         }
-
-        return menuMapper.toResponse(menuRepo.save(menu));
+        return menuMapper.toMenuResponse(menuRepo.save(menu));
     }
 
     @Override
@@ -76,6 +78,6 @@ public class MenuServiceImpl implements MenuService {
     public MenuTreeResponse tree(Long id) {
         var menu = menuRepo.findWithTreeById(id)
                 .orElseThrow(() -> new MenuNotFoundException(id));
-        return menuMapper.toTreeResponse(menu);
+        return menuMapper.toMenuTreeResponse(menu);
     }
 }

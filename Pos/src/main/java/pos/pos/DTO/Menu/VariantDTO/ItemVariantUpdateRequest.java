@@ -11,8 +11,5 @@ public record ItemVariantUpdateRequest(
         @Digits(integer = 10, fraction = 2, message = "priceOverride must have max 2 decimal places")
         BigDecimal priceOverride,
 
-        Boolean isDefault,
-
-        @Min(value = 0, message = "sortOrder must be >= 0")
-        Integer sortOrder
+        Boolean isDefault
 ) {}

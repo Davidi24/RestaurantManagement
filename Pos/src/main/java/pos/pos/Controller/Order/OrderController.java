@@ -4,8 +4,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
+import pos.pos.Config.Security.AuthUtils;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderCreateDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderResponseDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderStatusUpdateDTO;
@@ -13,6 +13,7 @@ import pos.pos.DTO.Order.OrderCollectorDTO.OrderUpdateDTO;
 import pos.pos.Service.Interfecaes.OrderService;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -20,11 +21,11 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final AuthUtils authUtils;
 
     @PostMapping
     public ResponseEntity<OrderResponseDTO> createOrder(@Valid @RequestBody OrderCreateDTO dto, Authentication authentication) {
-        JwtAuthenticationToken jwtAuth = (JwtAuthenticationToken) authentication;
-        String email = jwtAuth.getToken().getSubject();
+        String email = authUtils.getUserEmail(authentication);
         return ResponseEntity.ok(orderService.createOrder(dto, email));
     }
 
@@ -53,4 +54,24 @@ public class OrderController {
     public ResponseEntity<OrderResponseDTO> updateStatus(@PathVariable Long id, @Valid @RequestBody OrderStatusUpdateDTO dto) {
         return ResponseEntity.ok(orderService.updateStatus(id, dto));
     }
+
+    @PutMapping("/{id}/close")
+    public ResponseEntity<OrderResponseDTO> close(@PathVariable Long id, Authentication auth) {
+        String email = authUtils.getUserEmail(auth);
+        return ResponseEntity.ok(orderService.closeOrder(id, email));
+    }
+
+    @PostMapping("/{id}/void")
+    public ResponseEntity<OrderResponseDTO> voidOrder(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body, Authentication auth) {
+        String email = authUtils.getUserEmail(auth);
+        String reason = body != null ? body.getOrDefault("reason", "Void") : "Void";
+        return ResponseEntity.ok(orderService.voidOrder(id, reason, email));
+    }
+
+    @PutMapping("/{id}/serve-all")
+    public ResponseEntity<OrderResponseDTO> serveAll(@PathVariable Long id, Authentication auth) {
+        String email = authUtils.getUserEmail(auth);
+        return ResponseEntity.ok(orderService.serveAllItems(id, email));
+    }
+
 }

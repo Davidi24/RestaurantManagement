@@ -11,8 +11,10 @@ import pos.pos.Entity.Menu.ItemVariant;
 import pos.pos.Entity.Menu.MenuItem;
 import pos.pos.Entity.Menu.OptionGroup;
 
-import java.util.Comparator;
 import java.util.List;
+
+import static pos.pos.Util.MenuComparators.OPTION_GROUP_ORDER;
+import static pos.pos.Util.MenuComparators.VARIANT_ORDER;
 
 @Component
 @RequiredArgsConstructor
@@ -38,23 +40,17 @@ public class MenuItemMapper {
     }
 
     public MenuItemResponse toMenuItemResponse(MenuItem item) {
-        // ✅ map variants
         List<ItemVariantResponse> variants =
                 (item.getVariants() == null ? List.<ItemVariant>of() : item.getVariants())
                         .stream()
-                        .sorted(Comparator
-                                .comparing(ItemVariant::getSortOrder, Comparator.nullsLast(Integer::compareTo))
-                                .thenComparing(ItemVariant::getId))
+                        .sorted(VARIANT_ORDER)
                         .map(itemVariantMapper::toResponse)
                         .toList();
 
-        // ✅ map option groups
         List<OptionGroupResponse> optionGroups =
                 (item.getOptionGroups() == null ? List.<OptionGroup>of() : item.getOptionGroups())
                         .stream()
-                        .sorted(Comparator
-                                .comparing(OptionGroup::getSortOrder, Comparator.nullsLast(Integer::compareTo))
-                                .thenComparing(OptionGroup::getId))
+                        .sorted(OPTION_GROUP_ORDER)
                         .map(optionGroupMapper::toResponse)
                         .toList();
 

@@ -1,4 +1,4 @@
-package pos.pos.Service.Menu;
+package pos.pos.Util;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -20,8 +20,7 @@ public final class OrderingManger {
 
     public static int toZeroBasedForInsert(Integer requested1Based, long count) {
         int req = (requested1Based == null) ? (int) (count + 1) : requested1Based;
-        int pos1 = clamp(req, 1, (int) count + 1);
-        return pos1 - 1;
+        return toZeroBasedForMove(req, count);
     }
 
     public static int toZeroBasedForMove(int newSortOrder1Based, long total) {
@@ -52,15 +51,19 @@ public final class OrderingManger {
         } else if (pos == count) {
             return lastKey.get().add(STEP);
         } else {
-            BigDecimal left = nthKey.apply(pos - 1);
-            BigDecimal right = nthKey.apply(pos);
-            if (tooClose(left, right)) {
-                rebalanceIfNeeded.run();
-                left = nthKey.apply(pos - 1);
-                right = nthKey.apply(pos);
-            }
-            return mid(left, right);
+            return getBigDecimal(nthKey, rebalanceIfNeeded, pos);
         }
+    }
+
+    private static BigDecimal getBigDecimal(IntFunction<BigDecimal> nthKey, Runnable rebalanceIfNeeded, int pos) {
+        BigDecimal left = nthKey.apply(pos - 1);
+        BigDecimal right = nthKey.apply(pos);
+        if (tooClose(left, right)) {
+            rebalanceIfNeeded.run();
+            left = nthKey.apply(pos - 1);
+            right = nthKey.apply(pos);
+        }
+        return mid(left, right);
     }
 
     public static BigDecimal computeMoveKeyDecimal(
@@ -81,14 +84,7 @@ public final class OrderingManger {
             if (currentKey != null && last.compareTo(currentKey) == 0) return last;
             return last.add(STEP);
         } else {
-            BigDecimal left = nthExcludingKey.apply(pos - 1);
-            BigDecimal right = nthExcludingKey.apply(pos);
-            if (tooClose(left, right)) {
-                rebalanceIfNeeded.run();
-                left = nthExcludingKey.apply(pos - 1);
-                right = nthExcludingKey.apply(pos);
-            }
-            return mid(left, right);
+            return getBigDecimal(nthExcludingKey, rebalanceIfNeeded, pos);
         }
     }
 }

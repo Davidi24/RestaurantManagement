@@ -24,15 +24,34 @@ public interface ItemVariantRepository extends JpaRepository<ItemVariant, Long> 
 
     Optional<ItemVariant> findByPublicId(UUID publicId);
 
-    List<ItemVariant> findByItem_PublicIdOrderBySortOrderAscIdAsc(UUID itemPublicId);
+    Optional<ItemVariant> findByItem_IdAndSortOrder(Long itemId, Integer sortOrder);
 
-    Optional<ItemVariant> findByPublicIdAndItem_PublicId(UUID variantPublicId, UUID itemPublicId);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ItemVariant v SET v.sortOrder = :pos WHERE v.item.id = :itemId AND v.id = :variantId")
+    void updateSortOrder(@Param("itemId") Long itemId,
+                         @Param("variantId") Long variantId,
+                         @Param("pos") int pos);
 
-    boolean existsByItem_PublicIdAndNameIgnoreCase(UUID itemPublicId, String name);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ItemVariant v SET v.sortOrder = v.sortOrder + 1 " +
+            "WHERE v.item.id = :itemId AND v.sortOrder >= :fromPos")
+    void shiftRightFrom(@Param("itemId") Long itemId, @Param("fromPos") int fromPos);
 
-    long countByItem_PublicId(UUID itemPublicId);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE ItemVariant v SET v.sortOrder = v.sortOrder - 1 " +
+            "WHERE v.item.id = :itemId AND v.sortOrder > :fromPos")
+    void shiftLeftAfter(@Param("itemId") Long itemId, @Param("fromPos") int fromPos);
 
-    @Modifying
-    @Query("update ItemVariant v set v.isDefault = false where v.item.publicId = :itemPublicId")
-    void clearDefaultForItemPublicId(@Param("itemPublicId") UUID itemPublicId);
+
+//    List<ItemVariant> findByItem_PublicIdOrderBySortOrderAscIdAsc(UUID itemPublicId);
+//
+//    Optional<ItemVariant> findByPublicIdAndItem_PublicId(UUID variantPublicId, UUID itemPublicId);
+//
+//    boolean existsByItem_PublicIdAndNameIgnoreCase(UUID itemPublicId, String name);
+//
+//    long countByItem_PublicId(UUID itemPublicId);
+//
+//    @Modifying
+//    @Query("update ItemVariant v set v.isDefault = false where v.item.publicId = :itemPublicId")
+//    void clearDefaultForItemPublicId(@Param("itemPublicId") UUID itemPublicId);
 }

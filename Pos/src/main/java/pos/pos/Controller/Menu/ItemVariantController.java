@@ -2,19 +2,20 @@ package pos.pos.Controller.Menu;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import pos.pos.Config.ApiPaths;
 import pos.pos.DTO.Menu.VariantDTO.ItemVariantCreateRequest;
 import pos.pos.DTO.Menu.VariantDTO.ItemVariantResponse;
 import pos.pos.DTO.Menu.VariantDTO.ItemVariantUpdateRequest;
 import pos.pos.Service.Interfecaes.ItemVariantService;
 
-import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/menus/{menuId}/sections/{sectionId}/items/{itemId}/variants")
+@RequestMapping(value = ApiPaths.Menu.VARIANT, produces = "application/json")
 @RequiredArgsConstructor
 public class ItemVariantController {
 
@@ -39,22 +40,19 @@ public class ItemVariantController {
         return service.getVariant(menuId, sectionId, itemId, variantId);
     }
 
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','SUPERADMIN')")
+    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
-    public ResponseEntity<ItemVariantResponse> create(
+    public ItemVariantResponse create(
             @PathVariable Long menuId,
             @PathVariable Long sectionId,
             @PathVariable Long itemId,
-            @Valid @RequestBody ItemVariantCreateRequest request,
-            UriComponentsBuilder uriBuilder
+            @Valid @RequestBody ItemVariantCreateRequest request
     ) {
-        ItemVariantResponse created = service.createVariant(menuId, sectionId, itemId, request);
-        URI location = uriBuilder
-                .path("/menus/{menuId}/sections/{sectionId}/items/{itemId}/variants/{variantId}")
-                .buildAndExpand(menuId, sectionId, itemId, created.id())
-                .toUri();
-        return ResponseEntity.created(location).body(created);
+        return service.createVariant(menuId, sectionId, itemId, request);
     }
 
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','SUPERADMIN')")
     @PatchMapping("/{variantId}")
     public ItemVariantResponse update(
             @PathVariable Long menuId,
@@ -66,14 +64,34 @@ public class ItemVariantController {
         return service.updateVariant(menuId, sectionId, itemId, variantId, request);
     }
 
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','SUPERADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{variantId}")
-    public ResponseEntity<Void> delete(
+    public void delete(
             @PathVariable Long menuId,
             @PathVariable Long sectionId,
             @PathVariable Long itemId,
             @PathVariable Long variantId
     ) {
         service.deleteVariant(menuId, sectionId, itemId, variantId);
-        return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{variantId}/move-up")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','SUPERADMIN')")
+    public ItemVariantResponse moveUp(@PathVariable Long menuId,
+                                      @PathVariable Long sectionId,
+                                      @PathVariable Long itemId,
+                                      @PathVariable Long variantId) {
+        return service.moveOne(menuId, sectionId, itemId, variantId, -1);
+    }
+
+    @PatchMapping("/{variantId}/move-down")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','SUPERADMIN')")
+    public ItemVariantResponse moveDown(@PathVariable Long menuId,
+                                        @PathVariable Long sectionId,
+                                        @PathVariable Long itemId,
+                                        @PathVariable Long variantId) {
+        return service.moveOne(menuId, sectionId, itemId, variantId, +1);
+    }
+
 }

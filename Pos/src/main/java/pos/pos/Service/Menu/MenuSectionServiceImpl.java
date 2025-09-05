@@ -17,6 +17,7 @@ import pos.pos.Exeption.MenuSectionNotFound;
 import pos.pos.Repository.Menu.MenuRepository;
 import pos.pos.Repository.Menu.MenuSectionRepository;
 import pos.pos.Service.Interfecaes.MenuSectionService;
+import pos.pos.Util.OrderingManger;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -33,11 +34,8 @@ public class MenuSectionServiceImpl implements MenuSectionService {
     @Override
     @Transactional(readOnly = true)
     public List<MenuSectionResponse> listSections(Long menuId) {
-        var list = sectionRepository.findByMenu_IdOrderByOrderKeyAsc(menuId);
-        int[] i = {1};
-        return list.stream()
-                .map(s -> mapper.toMenuSectionResponse(s, i[0]++))
-                .toList();
+        var sections = sectionRepository.findByMenu_IdOrderByOrderKeyAsc(menuId);
+        return mapper.toMenuSectionResponse(sections);
     }
 
     @Override
@@ -48,11 +46,12 @@ public class MenuSectionServiceImpl implements MenuSectionService {
         if (sectionRepository.existsByMenu_IdAndNameIgnoreCase(menuId, req.name())) {
             throw new AlreadyExistsException("MenuSection", req.name());
         }
-
         long count = sectionRepository.countByMenu_Id(menuId);
+        int desired = req.sortOrder() == null ? (int) (count + 1) : req.sortOrder();
+        int target = clampPosition(desired, count);
 
         BigDecimal key = OrderingManger.computeInsertKeyDecimal(
-                req.sortOrder(),
+                target,
                 count,
                 () -> sectionRepository.findFirstByMenu_IdOrderByOrderKeyAsc(menuId).orElseThrow().getOrderKey(),
                 () -> sectionRepository.findFirstByMenu_IdOrderByOrderKeyDesc(menuId).orElseThrow().getOrderKey(),
@@ -73,13 +72,18 @@ public class MenuSectionServiceImpl implements MenuSectionService {
     @Transactional
     public MenuSectionResponse updateSection(Long menuId, Long sectionId, MenuSectionUpdateRequest req) {
         MenuSection section = sectionRepository.findByIdAndMenu_Id(sectionId, menuId)
-                .orElseThrow(() -> new MenuSectionNotFound(menuId,sectionId));
-        if (!section.getName().equalsIgnoreCase(req.name())
-                && sectionRepository.existsByMenu_IdAndNameIgnoreCase(menuId, req.name())) {
-            throw new AlreadyExistsException("Menu Section", req.name());
+                .orElseThrow(() -> new MenuSectionNotFound(menuId, sectionId));
+
+        if (req.name() != null) {
+            String current = section.getName();
+            String incoming = req.name();
+            boolean changed = current == null || !current.equalsIgnoreCase(incoming);
+            if (changed && sectionRepository.existsByMenu_IdAndNameIgnoreCase(menuId, incoming)) {
+                throw new AlreadyExistsException("MenuSection", incoming);
+            }
         }
-        mapper.apply(req, section);
-        section = sectionRepository.save(section);
+
+        mapper.update(req, section);
         return toResponse(section);
     }
 
@@ -87,7 +91,7 @@ public class MenuSectionServiceImpl implements MenuSectionService {
     @Transactional
     public void deleteSection(Long menuId, Long sectionId) {
         MenuSection section = sectionRepository.findByIdAndMenu_Id(sectionId, menuId)
-                .orElseThrow(() -> new MenuSectionNotFound(menuId,sectionId));
+                .orElseThrow(() -> new MenuSectionNotFound(menuId, sectionId));
         sectionRepository.delete(section);
     }
 
@@ -95,13 +99,13 @@ public class MenuSectionServiceImpl implements MenuSectionService {
     @Transactional
     public MenuSectionResponse moveSection(Long menuId, Long sectionId, int newSortOrder) {
         MenuSection section = sectionRepository.findByIdAndMenu_Id(sectionId, menuId)
-                .orElseThrow(() -> new MenuSectionNotFound(menuId,sectionId));
+                .orElseThrow(() -> new MenuSectionNotFound(menuId, sectionId));
 
-        long total = Math.max(0, sectionRepository.countByMenu_Id(menuId) - 1);
+        long totalOthers = Math.max(0, sectionRepository.countByMenu_Id(menuId) - 1);
 
         BigDecimal key = OrderingManger.computeMoveKeyDecimal(
                 newSortOrder,
-                total,
+                totalOthers,
                 () -> nthExcluding(menuId, sectionId, 0).orElseThrow().getOrderKey(),
                 () -> sectionRepository.findFirstByMenu_IdOrderByOrderKeyDesc(menuId).orElseThrow().getOrderKey(),
                 idx -> nthExcluding(menuId, sectionId, idx).orElseThrow().getOrderKey(),
@@ -110,7 +114,6 @@ public class MenuSectionServiceImpl implements MenuSectionService {
         );
 
         section.setOrderKey(key);
-        section = sectionRepository.save(section);
         return toResponse(section);
     }
 
@@ -118,7 +121,7 @@ public class MenuSectionServiceImpl implements MenuSectionService {
     @Transactional(readOnly = true)
     public MenuSectionResponse getSection(Long menuId, Long sectionId) {
         MenuSection section = sectionRepository.findByIdAndMenu_Id(sectionId, menuId)
-                .orElseThrow(() -> new MenuSectionNotFound(menuId,sectionId));
+                .orElseThrow(() -> new MenuSectionNotFound(menuId, sectionId));
         return toResponse(section);
     }
 
@@ -126,14 +129,14 @@ public class MenuSectionServiceImpl implements MenuSectionService {
         if (index < 0) return Optional.empty();
         Pageable p = PageRequest.of(index, 1);
         List<MenuSection> list = sectionRepository.findByMenu_IdOrderByOrderKeyAsc(menuId, p);
-        return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+        return list.isEmpty() ? Optional.empty() : Optional.of(list.getFirst());
     }
 
     private Optional<MenuSection> nthExcluding(Long menuId, Long excludeId, int index) {
         if (index < 0) return Optional.empty();
         Pageable p = PageRequest.of(index, 1);
         List<MenuSection> list = sectionRepository.findByMenu_IdAndIdNotOrderByOrderKeyAsc(menuId, excludeId, p);
-        return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+        return list.isEmpty() ? Optional.empty() : Optional.of(list.getFirst());
     }
 
     private MenuSectionResponse toResponse(MenuSection s) {
@@ -141,5 +144,19 @@ public class MenuSectionServiceImpl implements MenuSectionService {
         int position1Based = Math.toIntExact(zeroBased + 1);
         return mapper.toMenuSectionResponse(s, position1Based);
     }
-}
 
+    // This function is used to find the position that the new section will be.
+    // For example if we get count <= 0 it means no section is find in the Database
+    // so put the new section in the first place. If desired is a number like -10 for
+    // example then put it in the first place. And last we check if desired is bigger than
+    // count + 1 which means if user puts 1000 but there are only 4 section then put it in
+    // the 5 place. If not then put it when the user desires.
+    private static int clampPosition(int desired, long count) {
+        if (count <= 0) return 1;
+        if (desired < 1) return 1;
+        if (desired > count + 1) return Math.toIntExact(count + 1);
+        return desired;
+    }
+
+
+}

@@ -11,6 +11,4 @@ public record MenuTreeResponse(
         String description,
         UUID publicId,
         List<MenuSectionResponse> sections
-) {
-
-}
+) {}

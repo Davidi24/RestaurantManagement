@@ -8,5 +8,4 @@ public record MenuItemCreateRequest(
         @PositiveOrZero BigDecimal basePrice,
         boolean available,
         @PositiveOrZero Integer sortOrder
-        // TODO: later add variant & option group create requests if needed
 ) {}

@@ -12,13 +12,8 @@ public class OrderVariantSnapshot {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    // legacy (keep during transition)
     private Long variantId;
-
-    // new global identifier
     private UUID variantPublicId;
-
     private String variantName;
     private Double priceOverride;
 

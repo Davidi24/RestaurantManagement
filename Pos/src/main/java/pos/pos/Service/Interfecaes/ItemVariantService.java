@@ -17,4 +17,7 @@ public interface ItemVariantService {
     ItemVariantResponse updateVariant(Long menuId, Long sectionId, Long itemId, Long variantId, ItemVariantUpdateRequest request);
 
     void deleteVariant(Long menuId, Long sectionId, Long itemId, Long variantId);
+
+    ItemVariantResponse moveOne(Long menuId, Long sectionId, Long itemId, Long variantId, int direction);
+
 }

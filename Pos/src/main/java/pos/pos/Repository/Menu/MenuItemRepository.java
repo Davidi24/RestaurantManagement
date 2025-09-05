@@ -1,5 +1,6 @@
 package pos.pos.Repository.Menu;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import pos.pos.Entity.Menu.MenuItem;
@@ -18,29 +19,29 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
 
     long countBySection_Id(Long sectionId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE MenuItem mi SET mi.sortOrder = mi.sortOrder + 1 " +
             "WHERE mi.section.id = :sectionId AND mi.sortOrder >= :fromPos")
-    int shiftRightFrom(@Param("sectionId") Long sectionId, @Param("fromPos") int fromPos);
+    void shiftRightFrom(@Param("sectionId") Long sectionId, @Param("fromPos") int fromPos);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE MenuItem mi SET mi.sortOrder = mi.sortOrder - 1 " +
             "WHERE mi.section.id = :sectionId AND mi.sortOrder > :fromPos")
-    int shiftLeftAfter(@Param("sectionId") Long sectionId, @Param("fromPos") int fromPos);
+    void shiftLeftAfter(@Param("sectionId") Long sectionId, @Param("fromPos") int fromPos);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE MenuItem mi SET mi.sortOrder = mi.sortOrder + 1 " +
             "WHERE mi.section.id = :sectionId AND mi.sortOrder >= :startPos AND mi.sortOrder < :endPos")
-    int shiftRightRange(@Param("sectionId") Long sectionId,
-                        @Param("startPos") int startPos,
-                        @Param("endPos") int endPos);
+    void shiftRightRange(@Param("sectionId") Long sectionId,
+                         @Param("startPos") int startPos,
+                         @Param("endPos") int endPos);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE MenuItem mi SET mi.sortOrder = mi.sortOrder - 1 " +
             "WHERE mi.section.id = :sectionId AND mi.sortOrder > :startPos AND mi.sortOrder <= :endPos")
-    int shiftLeftRange(@Param("sectionId") Long sectionId,
-                       @Param("startPos") int startPos,
-                       @Param("endPos") int endPos);
+    void shiftLeftRange(@Param("sectionId") Long sectionId,
+                        @Param("startPos") int startPos,
+                        @Param("endPos") int endPos);
 
     Optional<MenuItem> findByPublicId(UUID publicId);
 
@@ -50,4 +51,27 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
 
     boolean existsBySection_PublicIdAndNameIgnoreCase(UUID sectionPublicId, String name);
 
+    Optional<MenuItem> findBySection_IdAndSortOrder(Long sectionId, Integer sortOrder);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+            UPDATE menu_item
+            SET sort_order = CASE
+                WHEN id = :idA THEN :posB
+                WHEN id = :idB THEN :posA
+                ELSE sort_order
+            END
+            WHERE section_id = :sectionId
+              AND id IN (:idA, :idB)
+            """, nativeQuery = true)
+
+    void swapSortOrders(@Param("sectionId") Long sectionId,
+                        @Param("idA") Long idA, @Param("posA") int posA,
+                        @Param("idB") Long idB, @Param("posB") int posB);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE MenuItem mi SET mi.sortOrder = :pos WHERE mi.section.id = :sectionId AND mi.id = :itemId")
+    void updateSortOrder(@Param("sectionId") Long sectionId,
+                        @Param("itemId") Long itemId,
+                        @Param("pos") int pos);
 }

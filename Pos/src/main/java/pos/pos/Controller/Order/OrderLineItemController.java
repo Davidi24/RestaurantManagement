@@ -9,6 +9,7 @@ import pos.pos.Config.Security.AuthUtils;
 import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemCreateDTO;
 import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemResponseDTO;
 import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemUpdateDTO;
+import pos.pos.Entity.Order.FulfillmentStatus;
 import pos.pos.Service.Interfecaes.OrderLineItemService;
 
 import java.util.List;
@@ -55,5 +56,13 @@ public class OrderLineItemController {
             @PathVariable Long orderId,
             @PathVariable Long lineItemId) {
         return ResponseEntity.ok(orderLineItemService.getLineItemById(orderId, lineItemId));
+    }
+
+    @PutMapping("/{lineItemId}/fulfillment")
+    public ResponseEntity<OrderLineItemResponseDTO> setFulfillment(
+            @PathVariable Long orderId,
+            @PathVariable Long lineItemId,
+            @RequestParam FulfillmentStatus status) {
+        return ResponseEntity.ok(orderLineItemService.updateFulfillmentStatus(orderId, lineItemId, status));
     }
 }

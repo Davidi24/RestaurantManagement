@@ -29,4 +29,5 @@ public interface MenuRepository extends JpaRepository<Menu, Long> {
             "sections.items.optionGroups.options"
     })
     Optional<Menu> findWithTreeByPublicId(UUID publicId);
+    boolean existsByName(String name);
 }

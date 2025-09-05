@@ -15,6 +15,7 @@ import pos.pos.Exeption.MenuItemException;
 import pos.pos.Exeption.MenuSectionNotFound;
 import pos.pos.Repository.Menu.ItemVariantRepository;
 import pos.pos.Repository.Menu.MenuItemRepository;
+import pos.pos.Util.OrderingManger;
 
 import java.util.List;
 
@@ -49,22 +50,28 @@ public class ItemVariantServiceImpl implements pos.pos.Service.Interfecaes.ItemV
         MenuItem item = loadItemOrThrow(menuId, sectionId, itemId);
 
         if (request.name() != null && variantRepository.existsByItem_IdAndNameIgnoreCase(itemId, request.name())) {
-            throw new AlreadyExistsException("Menu variant ", request.name());
+            throw new AlreadyExistsException("Menu variant", request.name());
         }
+
+        long count = variantRepository.countByItem_Id(itemId);
+        int pos = OrderingManger.clamp(
+                (request.sortOrder() == null) ? (int) (count + 1) : request.sortOrder(),
+                1, (int) count + 1
+        );
+
+        variantRepository.shiftRightFrom(itemId, pos);
 
         ItemVariant entity = mapper.toEntity(request, item);
-        if (entity.isDefault()) {
-            variantRepository.clearDefaultForItem(itemId);
-        }
+        entity.setSortOrder(pos);
 
-        if (entity.getSortOrder() == null) {
-            long count = variantRepository.countByItem_Id(itemId);
-            entity.setSortOrder((int) count);
+        if (Boolean.TRUE.equals(entity.isDefault())) {
+            variantRepository.clearDefaultForItem(itemId);
         }
 
         ItemVariant saved = variantRepository.save(entity);
         return mapper.toResponse(saved);
     }
+
 
     @Override
     @Transactional
@@ -96,9 +103,46 @@ public class ItemVariantServiceImpl implements pos.pos.Service.Interfecaes.ItemV
         loadItemOrThrow(menuId, sectionId, itemId);
 
         ItemVariant entity = variantRepository.findByIdAndItem_Id(variantId, itemId)
-                .orElseThrow(() -> new MenuItemException(menuId, sectionId, itemId));
+                .orElseThrow(() -> new ItemVariantNotFound(menuId, sectionId, itemId, variantId));
 
+        int oldPos = entity.getSortOrder();
         variantRepository.delete(entity);
+        variantRepository.shiftLeftAfter(itemId, oldPos);
+    }
+
+
+    @Override
+    @Transactional
+    public ItemVariantResponse moveOne(Long menuId, Long sectionId, Long itemId, Long variantId, int direction) {
+        loadItemOrThrow(menuId, sectionId, itemId);
+
+        if (direction != -1 && direction != 1) {
+            throw new IllegalArgumentException("direction must be -1 (up) or +1 (down)");
+        }
+
+        ItemVariant v = variantRepository.findByIdAndItem_Id(variantId, itemId)
+                .orElseThrow(() -> new ItemVariantNotFound(menuId, sectionId, itemId, variantId));
+
+        int oldPos = v.getSortOrder();
+        int targetPos = oldPos + direction;
+
+        long count = variantRepository.countByItem_Id(itemId);
+        if (targetPos < 1 || targetPos > count) {
+            return mapper.toResponse(v);
+        }
+
+        ItemVariant neighbor = variantRepository.findByItem_IdAndSortOrder(itemId, targetPos)
+                .orElseThrow(() -> new IllegalStateException("Neighbor not found, data corrupted"));
+
+        int tempPos = -v.getId().intValue();
+        variantRepository.updateSortOrder(itemId, v.getId(), tempPos);
+        variantRepository.updateSortOrder(itemId, neighbor.getId(), oldPos);
+        variantRepository.updateSortOrder(itemId, v.getId(), targetPos);
+
+        ItemVariant reloaded = variantRepository.findByIdAndItem_Id(v.getId(), itemId)
+                .orElseThrow(() -> new ItemVariantNotFound(menuId, sectionId, itemId, v.getId()));
+
+        return mapper.toResponse(reloaded);
     }
 
 

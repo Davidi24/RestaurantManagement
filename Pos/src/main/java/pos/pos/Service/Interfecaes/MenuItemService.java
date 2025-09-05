@@ -16,5 +16,7 @@ public interface MenuItemService {
 
     void deleteItem(Long menuId, Long sectionId, Long itemId);
 
-    MenuItemResponse moveItem(Long menuId, Long sectionId, Long itemId, int newSortOrder);
+    MenuItemResponse moveOne(Long menuId, Long sectionId, Long itemId, int direction);
+
+    MenuItemResponse getItems(Long menuId, Long sectionId, Long itemId);
 }
