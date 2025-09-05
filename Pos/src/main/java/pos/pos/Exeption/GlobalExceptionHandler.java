@@ -1,6 +1,7 @@
 package pos.pos.Exeption;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -10,6 +11,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +20,17 @@ import java.util.Map;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    // --- 404 Not Found: unknown route or missing static resource ----------------
+    @ExceptionHandler({ NoHandlerFoundException.class, NoResourceFoundException.class })
+    public ResponseEntity<Map<String, Object>> handleNoHandler(Exception ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of(
+                        "error", "NotFound",
+                        "message", "API does not exist",
+                        "path", req.getRequestURI()
+                ));
+    }
 
     // --- 409 Conflict -------------------------------------------------------
     @ExceptionHandler({
