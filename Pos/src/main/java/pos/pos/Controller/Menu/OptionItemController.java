@@ -2,68 +2,64 @@ package pos.pos.Controller.Menu;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import pos.pos.Config.ApiPaths;
 import pos.pos.DTO.Menu.OptionDTO.OptionItemCreateRequest;
 import pos.pos.DTO.Menu.OptionDTO.OptionItemResponse;
 import pos.pos.DTO.Menu.OptionDTO.OptionItemUpdateRequest;
 import pos.pos.Service.Interfecaes.OptionItemService;
 
-import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping(
-        value = "/menus/{menuId}/sections/{sectionId}/items/{itemId}/option-groups/{groupId}/options",
+        value = ApiPaths.Menu.OPTION_ITEM,
         produces = "application/json"
 )
+@RequiredArgsConstructor
 public class OptionItemController {
 
     private final OptionItemService service;
 
     @GetMapping
-    public ResponseEntity<List<OptionItemResponse>> list(
+    public List<OptionItemResponse> list(
             @PathVariable Long menuId,
             @PathVariable Long sectionId,
             @PathVariable Long itemId,
             @PathVariable Long groupId
     ) {
-        return ResponseEntity.ok(service.list(menuId, sectionId, itemId, groupId));
-    }
-
-    @PostMapping(consumes = "application/json")
-    public ResponseEntity<OptionItemResponse> create(
-            @PathVariable Long menuId,
-            @PathVariable Long sectionId,
-            @PathVariable Long itemId,
-            @PathVariable Long groupId,
-            @Valid @RequestBody OptionItemCreateRequest body
-    ) {
-        var created = service.create(menuId, sectionId, itemId, groupId, body);
-
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{optionId}")
-                .buildAndExpand(created.id())
-                .toUri();
-
-        return ResponseEntity.created(location).body(created);
+        return service.list(menuId, sectionId, itemId, groupId);
     }
 
     @GetMapping("/{optionId}")
-    public ResponseEntity<OptionItemResponse> get(
+    public OptionItemResponse get(
             @PathVariable Long menuId,
             @PathVariable Long sectionId,
             @PathVariable Long itemId,
             @PathVariable Long groupId,
             @PathVariable Long optionId
     ) {
-        return ResponseEntity.ok(service.get(menuId, sectionId, itemId, groupId, optionId));
+        return service.get(menuId, sectionId, itemId, groupId, optionId);
     }
 
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','SUPERADMIN')")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping(consumes = "application/json")
+    public OptionItemResponse create(
+            @PathVariable Long menuId,
+            @PathVariable Long sectionId,
+            @PathVariable Long itemId,
+            @PathVariable Long groupId,
+            @Valid @RequestBody OptionItemCreateRequest body
+    ) {
+        return service.create(menuId, sectionId, itemId, groupId, body);
+    }
+
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','SUPERADMIN')")
     @PatchMapping(value = "/{optionId}", consumes = "application/json")
-    public ResponseEntity<OptionItemResponse> patch(
+    public OptionItemResponse patch(
             @PathVariable Long menuId,
             @PathVariable Long sectionId,
             @PathVariable Long itemId,
@@ -71,11 +67,13 @@ public class OptionItemController {
             @PathVariable Long optionId,
             @Valid @RequestBody OptionItemUpdateRequest body
     ) {
-        return ResponseEntity.ok(service.patch(menuId, sectionId, itemId, groupId, optionId, body));
+        return service.patch(menuId, sectionId, itemId, groupId, optionId, body);
     }
 
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','SUPERADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{optionId}")
-    public ResponseEntity<Void> delete(
+    public void delete(
             @PathVariable Long menuId,
             @PathVariable Long sectionId,
             @PathVariable Long itemId,
@@ -83,6 +81,29 @@ public class OptionItemController {
             @PathVariable Long optionId
     ) {
         service.delete(menuId, sectionId, itemId, groupId, optionId);
-        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','SUPERADMIN')")
+    @PatchMapping("/{optionId}/move-up")
+    public OptionItemResponse moveUp(
+            @PathVariable Long menuId,
+            @PathVariable Long sectionId,
+            @PathVariable Long itemId,
+            @PathVariable Long groupId,
+            @PathVariable Long optionId
+    ) {
+        return service.moveOne(menuId, sectionId, itemId, groupId, optionId, -1);
+    }
+
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','SUPERADMIN')")
+    @PatchMapping("/{optionId}/move-down")
+    public OptionItemResponse moveDown(
+            @PathVariable Long menuId,
+            @PathVariable Long sectionId,
+            @PathVariable Long itemId,
+            @PathVariable Long groupId,
+            @PathVariable Long optionId
+    ) {
+        return service.moveOne(menuId, sectionId, itemId, groupId, optionId, +1);
     }
 }

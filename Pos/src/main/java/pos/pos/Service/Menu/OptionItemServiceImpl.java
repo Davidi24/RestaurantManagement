@@ -8,9 +8,10 @@ import pos.pos.DTO.Menu.OptionDTO.OptionItemCreateRequest;
 import pos.pos.DTO.Menu.OptionDTO.OptionItemResponse;
 import pos.pos.DTO.Menu.OptionDTO.OptionItemUpdateRequest;
 import pos.pos.Entity.Menu.MenuItem;
+import pos.pos.Entity.Menu.MenuSection;
 import pos.pos.Entity.Menu.OptionGroup;
 import pos.pos.Entity.Menu.OptionItem;
-import pos.pos.Entity.Menu.MenuSection;
+import pos.pos.Exeption.AlreadyExistsException;
 import pos.pos.Exeption.MenuItemException;
 import pos.pos.Exeption.MenuSectionNotFound;
 import pos.pos.Exeption.OptionGroupNotFoundException;
@@ -20,6 +21,7 @@ import pos.pos.Repository.Menu.MenuSectionRepository;
 import pos.pos.Repository.Order.OptionGroupRepository;
 import pos.pos.Repository.Order.OptionItemRepository;
 import pos.pos.Service.Interfecaes.OptionItemService;
+import pos.pos.Util.OrderingManger;
 
 import java.util.List;
 
@@ -48,17 +50,20 @@ public class OptionItemServiceImpl implements OptionItemService {
     public OptionItemResponse create(Long menuId, Long sectionId, Long itemId, Long groupId, OptionItemCreateRequest body) {
         OptionGroup group = requireGroup(menuId, sectionId, itemId, groupId);
 
-        // Optional uniqueness guard per group
-        // if (optionRepo.existsByGroup_IdAndNameIgnoreCase(groupId, body.name())) {
-        //     throw new AlreadyExistsException("OptionItem", body.name());
-        // }
+        if (body.name() != null && optionRepo.existsByGroup_IdAndNameIgnoreCase(groupId, body.name())) {
+            throw new AlreadyExistsException("Option item", body.name());
+        }
+
+        long count = optionRepo.countByGroup_Id(groupId);
+        int pos = OrderingManger.clamp(
+                (body.sortOrder() == null) ? (int) (count + 1) : body.sortOrder(),
+                1, (int) count + 1
+        );
+
+        optionRepo.shiftRightFrom(groupId, pos);
 
         OptionItem entity = mapper.toEntity(body, group);
-
-        if (entity.getSortOrder() == null) {
-            int next = Math.toIntExact(optionRepo.countByGroup_Id(groupId));
-            entity.setSortOrder(next);
-        }
+        entity.setSortOrder(pos);
 
         return mapper.toResponse(optionRepo.save(entity));
     }
@@ -78,6 +83,11 @@ public class OptionItemServiceImpl implements OptionItemService {
         OptionItem oi = optionRepo.findByIdAndGroup_Id(optionId, groupId)
                 .orElseThrow(() -> new OptionItemNotFoundException(menuId, sectionId, itemId, groupId, optionId));
 
+        if (body.name() != null && !body.name().equalsIgnoreCase(oi.getName())
+                && optionRepo.existsByGroup_IdAndNameIgnoreCase(groupId, body.name())) {
+            throw new AlreadyExistsException("Option item", body.name());
+        }
+
         mapper.apply(body, oi);
         return mapper.toResponse(optionRepo.save(oi));
     }
@@ -87,10 +97,44 @@ public class OptionItemServiceImpl implements OptionItemService {
         requireGroup(menuId, sectionId, itemId, groupId);
         OptionItem oi = optionRepo.findByIdAndGroup_Id(optionId, groupId)
                 .orElseThrow(() -> new OptionItemNotFoundException(menuId, sectionId, itemId, groupId, optionId));
+        int oldPos = oi.getSortOrder();
         optionRepo.delete(oi);
+        optionRepo.shiftLeftAfter(groupId, oldPos);
     }
 
-    /** Validates: section belongs to menu, item belongs to section, group belongs to item. Returns the group. */
+    @Override
+    public OptionItemResponse moveOne(Long menuId, Long sectionId, Long itemId, Long groupId, Long optionId, int direction) {
+        requireGroup(menuId, sectionId, itemId, groupId);
+
+        if (direction != -1 && direction != 1) {
+            throw new IllegalArgumentException("direction must be -1 (up) or +1 (down)");
+        }
+
+        OptionItem oi = optionRepo.findByIdAndGroup_Id(optionId, groupId)
+                .orElseThrow(() -> new OptionItemNotFoundException(menuId, sectionId, itemId, groupId, optionId));
+
+        int oldPos = oi.getSortOrder();
+        int targetPos = oldPos + direction;
+
+        long count = optionRepo.countByGroup_Id(groupId);
+        if (targetPos < 1 || targetPos > count) {
+            return mapper.toResponse(oi);
+        }
+
+        OptionItem neighbor = optionRepo.findByGroup_IdAndSortOrder(groupId, targetPos)
+                .orElseThrow(() -> new IllegalStateException("Neighbor not found, data corrupted"));
+
+        int tempPos = -oi.getId().intValue();
+        optionRepo.updateSortOrder(groupId, oi.getId(), tempPos);
+        optionRepo.updateSortOrder(groupId, neighbor.getId(), oldPos);
+        optionRepo.updateSortOrder(groupId, oi.getId(), targetPos);
+
+        OptionItem reloaded = optionRepo.findByIdAndGroup_Id(oi.getId(), groupId)
+                .orElseThrow(() -> new OptionItemNotFoundException(menuId, sectionId, itemId, groupId, oi.getId()));
+
+        return mapper.toResponse(reloaded);
+    }
+
     private OptionGroup requireGroup(Long menuId, Long sectionId, Long itemId, Long groupId) {
         MenuSection section = sectionRepo.findByIdAndMenu_Id(sectionId, menuId)
                 .orElseThrow(() -> new MenuSectionNotFound(menuId, sectionId));

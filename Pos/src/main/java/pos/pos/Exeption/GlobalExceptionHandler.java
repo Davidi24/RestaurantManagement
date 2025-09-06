@@ -139,7 +139,8 @@ public class GlobalExceptionHandler {
             OrderItemNotFound.class,
             MenuItemNotFoundException.class,
             ItemVariantNotFoundException.class,
-            OptionItemNotFoundExceptionUDD.class // keeping your class name as provided
+            OptionItemNotFoundExceptionUDD.class,
+            OptionGroupNotFoundException.class
     })
     public ResponseEntity<Map<String, String>> handleNotFound(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)

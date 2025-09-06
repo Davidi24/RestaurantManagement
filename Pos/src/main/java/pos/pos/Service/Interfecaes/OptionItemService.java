@@ -19,4 +19,6 @@ public interface OptionItemService {
     OptionItemResponse patch(Long menuId, Long sectionId, Long itemId, Long groupId, Long optionId, OptionItemUpdateRequest body);
 
     void delete(Long menuId, Long sectionId, Long itemId, Long groupId, Long optionId);
+
+    OptionItemResponse moveOne(Long menuId, Long sectionId, Long itemId, Long groupId, Long optionId, int direction);
 }

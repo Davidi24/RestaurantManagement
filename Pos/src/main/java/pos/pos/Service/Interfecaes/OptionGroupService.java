@@ -12,5 +12,6 @@ public interface OptionGroupService {
     OptionGroupResponse getById(Long menuId, Long sectionId, Long itemId, Long groupId);
     OptionGroupResponse patch(Long menuId, Long sectionId, Long itemId, Long groupId, OptionGroupUpdateRequest body);
     void delete(Long menuId, Long sectionId, Long itemId, Long groupId);
+    OptionGroupResponse moveOne(Long menuId, Long sectionId, Long itemId, Long groupId, int direction);
 }
 
