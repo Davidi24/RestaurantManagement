@@ -9,6 +9,7 @@ import pos.pos.DTO.Order.OrderCollectorDTO.OrderResponseDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderStatusUpdateDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderUpdateDTO;
 import pos.pos.Entity.Order.FulfillmentStatus;
+import pos.pos.Entity.Order.OrderNumberCounter;
 import pos.pos.Entity.Order.OrderStatus;
 import pos.pos.Entity.Order.OrderEventType;
 import pos.pos.Exeption.InvalidOrderStateException;
@@ -17,6 +18,7 @@ import pos.pos.Repository.Order.OrderRepository;
 import pos.pos.Service.Interfecaes.OrderEventService;
 import pos.pos.Service.Interfecaes.OrderService;
 import pos.pos.Service.Interfecaes.TotalsService;
+import pos.pos.Util.OrderNumberFormatter;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,17 +32,25 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final OrderEventService orderEventService;
     private final TotalsService totalsService;
+    private final OrderNumberService orderNumberService;
+    private final OrderNumberFormatter orderNumberFormatter;
 
     @Override
     public OrderResponseDTO createOrder(OrderCreateDTO dto, String userEmail) {
         var order = orderMapper.toOrder(dto);
-        order = orderRepository.save(order);
-        order.setOrderNumber("T" + order.getTableId() + "-" + order.getId());
-        order.setOpenedAt(LocalDateTime.now());
+        order.setUserEmail(userEmail);
+
+        var today = java.time.LocalDate.now();
+        long seq = orderNumberService.nextFor(today, order.getTableId());
+        String orderNumber = orderNumberFormatter.format(order.getTableId(), today, seq);
+        order.setOrderNumber(orderNumber);
+
         order = orderRepository.save(order);
         orderEventService.logEvent(order, OrderEventType.CREATED, userEmail, "Order created");
         return orderMapper.toOrderResponse(order);
     }
+
+
 
     @Override
     public OrderResponseDTO updateOrder(Long orderId, OrderUpdateDTO dto) {

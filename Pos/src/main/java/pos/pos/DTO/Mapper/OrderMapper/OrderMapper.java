@@ -19,6 +19,7 @@ public class OrderMapper {
                 .tableId(dto.getTableId())
                 .status(OrderStatus.OPEN)
                 .type(OrderType.DINE_IN)
+                .numberOfGuests(dto.getNumberOfGuests())
                 .build();
     }
 
