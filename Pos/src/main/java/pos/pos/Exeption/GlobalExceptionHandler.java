@@ -36,7 +36,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             AlreadyExistsException.class,
             InvalidOrderStateException.class,
-            LineItemOrderMismatchException.class
+            LineItemOrderMismatchException.class,
+            OpenOrderExistsException.class,
     })
     public ResponseEntity<?> handleConflict(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)

@@ -12,5 +12,6 @@ public enum OrderEventType {
     PAID,
     REFUNDED,
     CLOSED,
-    VOIDED
+    VOIDED,
+    STATUS_CHANGED
 }

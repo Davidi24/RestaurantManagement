@@ -26,7 +26,6 @@ public class OrderNumberService {
                 ));
         long next = existing.getValue() + 1;
         existing.setValue(next);
-        // save not strictly necessary; dirty check will flush on commit
         return next;
     }
 }

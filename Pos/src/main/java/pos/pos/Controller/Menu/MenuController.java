@@ -21,19 +21,16 @@ public class MenuController {
     private final MenuService menuService;
 
     @GetMapping
-    @PreAuthorize("permitAll()")
     public List<MenuResponse> list() {
         return menuService.list();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("permitAll()")
     public MenuResponse get(@PathVariable Long id) {
         return menuService.get(id);
     }
 
     @GetMapping("/{id}/tree")
-    @PreAuthorize("permitAll()")
     public MenuTreeResponse tree(@PathVariable Long id) {
         return menuService.tree(id);
     }

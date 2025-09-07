@@ -13,4 +13,12 @@ public final class ApiPaths {
         public static final String OPTION_GROUP = ITEM + "/{itemId}/option-groups";
         public static final String OPTION_ITEM = OPTION_GROUP + "/{groupId}/options";
     }
+
+    public static final class Order {
+        public static final String BASE = V1 + "/orders";
+        public static final String LINE_ITEMS = BASE + "/{orderId}/line-items";
+        public static final String DISCOUNTS = BASE + "/{orderId}/discounts";
+        public static final String EVENTS = BASE + "/{orderId}/events";
+        public static final String TOTALS = BASE + "/{orderId}/totals";
+    }
 }

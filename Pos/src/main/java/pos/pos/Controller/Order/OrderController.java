@@ -3,8 +3,10 @@ package pos.pos.Controller.Order;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import pos.pos.Config.ApiPaths;
 import pos.pos.Config.Security.AuthUtils;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderCreateDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderResponseDTO;
@@ -16,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping(value = ApiPaths.Order.BASE, produces = "application/json")
 @RequiredArgsConstructor
 public class OrderController {
 
@@ -25,8 +27,7 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<OrderResponseDTO> createOrder(@Valid @RequestBody OrderCreateDTO dto, Authentication authentication) {
-        String email = authUtils.getUserEmail(authentication);
-        return ResponseEntity.ok(orderService.createOrder(dto, email));
+        return ResponseEntity.ok(orderService.createOrder(dto, authUtils.getUserEmail(authentication)));
     }
 
     @PutMapping("/{id}")
@@ -45,28 +46,18 @@ public class OrderController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
         orderService.deleteOrder(id);
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<OrderResponseDTO> updateStatus(@PathVariable Long id, @Valid @RequestBody OrderStatusUpdateDTO dto) {
-        return ResponseEntity.ok(orderService.updateStatus(id, dto));
+    public ResponseEntity<OrderResponseDTO> updateStatus(@PathVariable Long id, @Valid @RequestBody OrderStatusUpdateDTO dto, Authentication authentication) {
+        return ResponseEntity.ok(orderService.updateStatus(id, dto, authUtils.getUserEmail(authentication)));
     }
 
-    @PutMapping("/{id}/close")
-    public ResponseEntity<OrderResponseDTO> close(@PathVariable Long id, Authentication auth) {
-        String email = authUtils.getUserEmail(auth);
-        return ResponseEntity.ok(orderService.closeOrder(id, email));
-    }
 
-    @PostMapping("/{id}/void")
-    public ResponseEntity<OrderResponseDTO> voidOrder(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body, Authentication auth) {
-        String email = authUtils.getUserEmail(auth);
-        String reason = body != null ? body.getOrDefault("reason", "Void") : "Void";
-        return ResponseEntity.ok(orderService.voidOrder(id, reason, email));
-    }
 
     @PutMapping("/{id}/serve-all")
     public ResponseEntity<OrderResponseDTO> serveAll(@PathVariable Long id, Authentication auth) {

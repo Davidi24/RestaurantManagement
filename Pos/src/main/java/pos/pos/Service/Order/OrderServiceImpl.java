@@ -8,11 +8,9 @@ import pos.pos.DTO.Order.OrderCollectorDTO.OrderCreateDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderResponseDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderStatusUpdateDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderUpdateDTO;
-import pos.pos.Entity.Order.FulfillmentStatus;
-import pos.pos.Entity.Order.OrderNumberCounter;
-import pos.pos.Entity.Order.OrderStatus;
-import pos.pos.Entity.Order.OrderEventType;
+import pos.pos.Entity.Order.*;
 import pos.pos.Exeption.InvalidOrderStateException;
+import pos.pos.Exeption.OpenOrderExistsException;
 import pos.pos.Exeption.OrderNotFound;
 import pos.pos.Repository.Order.OrderRepository;
 import pos.pos.Service.Interfecaes.OrderEventService;
@@ -20,6 +18,7 @@ import pos.pos.Service.Interfecaes.OrderService;
 import pos.pos.Service.Interfecaes.TotalsService;
 import pos.pos.Util.OrderNumberFormatter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -36,13 +35,21 @@ public class OrderServiceImpl implements OrderService {
     private final OrderNumberFormatter orderNumberFormatter;
 
     @Override
+    @Transactional
     public OrderResponseDTO createOrder(OrderCreateDTO dto, String userEmail) {
+        Long tableId = dto.getTableId();
+
+        orderRepository.findFirstByTableIdAndStatus(tableId, OrderStatus.OPEN)
+                .ifPresent(existing -> {
+                    throw new OpenOrderExistsException(tableId, existing.getId(), existing.getOrderNumber());
+                });
+
         var order = orderMapper.toOrder(dto);
         order.setUserEmail(userEmail);
 
-        var today = java.time.LocalDate.now();
-        long seq = orderNumberService.nextFor(today, order.getTableId());
-        String orderNumber = orderNumberFormatter.format(order.getTableId(), today, seq);
+        var today = LocalDate.now();
+        long seq = orderNumberService.nextFor(today, tableId);
+        String orderNumber = orderNumberFormatter.format(tableId, today, seq);
         order.setOrderNumber(orderNumber);
 
         order = orderRepository.save(order);
@@ -50,23 +57,30 @@ public class OrderServiceImpl implements OrderService {
         return orderMapper.toOrderResponse(order);
     }
 
-
-
     @Override
+    @Transactional
     public OrderResponseDTO updateOrder(Long orderId, OrderUpdateDTO dto) {
-        var order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFound(orderId));
-        if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.VOIDED) {
+        var order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFound(orderId));
+
+        if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.VOIDED)
             throw new InvalidOrderStateException("Cannot update a closed or voided order");
-        }
-        if (dto.getNotes() != null) {
-            order.setNotes(dto.getNotes());
-        }
-        if (dto.getTableId() != null) {
+
+        if (dto.getNotes() != null) order.setNotes(dto.getNotes());
+
+        if (dto.getNumberOfGuests() != null && dto.getNumberOfGuests() >= 0)
+            order.setNumberOfGuests(dto.getNumberOfGuests());
+
+        if (dto.getTableId() != null && !dto.getTableId().equals(order.getTableId())) {
+            orderRepository.findFirstByTableIdAndStatus(dto.getTableId(), OrderStatus.OPEN)
+                    .ifPresent(existing -> { if (!existing.getId().equals(order.getId()))
+                        throw new OpenOrderExistsException(dto.getTableId(), existing.getId(), existing.getOrderNumber());
+                    });
             order.setTableId(dto.getTableId());
         }
-        order = orderRepository.save(order);
-        return orderMapper.toOrderResponse(order);
+        return orderMapper.toOrderResponse(orderRepository.save(order));
     }
+
 
     @Override
     public OrderResponseDTO getOrderById(Long id) {
@@ -87,45 +101,45 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.deleteById(id);
     }
 
-    @Override
-    public OrderResponseDTO updateStatus(Long id, OrderStatusUpdateDTO dto) {
+    @Transactional
+    public OrderResponseDTO updateStatus(Long id, OrderStatusUpdateDTO dto, String userEmail) {
         var order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFound(id));
-        order.setStatus(dto.getStatus());
-        if (dto.getStatus() == OrderStatus.CLOSED || dto.getStatus() == OrderStatus.VOIDED) {
+        applyStatusTransition(order, dto.getStatus(), userEmail); // reason = null
+        return orderMapper.toOrderResponse(orderRepository.save(order));
+    }
+
+    private void applyStatusTransition(Order order, OrderStatus target, String userEmail) {
+        var from = order.getStatus();
+
+        if (from == OrderStatus.CLOSED && target != OrderStatus.CLOSED)
+            throw new InvalidOrderStateException("Closed orders cannot change status");
+        if (from == OrderStatus.VOIDED && target != OrderStatus.VOIDED)
+            throw new InvalidOrderStateException("Voided orders cannot change status");
+
+        if (target == OrderStatus.CLOSED) {
+            totalsService.recalculateTotals(order);
+            boolean allDone = order.getLineItems().stream().allMatch(li ->
+                    li.getFulfillmentStatus() == FulfillmentStatus.SERVED ||
+                            li.getFulfillmentStatus() == FulfillmentStatus.VOIDED);
+            if (!allDone) throw new InvalidOrderStateException("Items not served/voided");
             order.setClosedAt(LocalDateTime.now());
+            order.setStatus(OrderStatus.CLOSED);
+            orderEventService.logEvent(order, OrderEventType.CLOSED, userEmail, "Order closed");
+            return;
         }
-        order = orderRepository.save(order);
-        return orderMapper.toOrderResponse(order);
-    }
 
-    @Override
-    public OrderResponseDTO closeOrder(Long id, String userEmail) {
-        var order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFound(id));
-        totalsService.recalculateTotals(order);
-        boolean allDone = order.getLineItems().stream().allMatch(li ->
-                li.getFulfillmentStatus() == FulfillmentStatus.SERVED
-                        || li.getFulfillmentStatus() == FulfillmentStatus.VOIDED);
-        if (!allDone) {
-            throw new InvalidOrderStateException("Items not served/voided");
+        if (target == OrderStatus.VOIDED) {
+            if (from == OrderStatus.CLOSED) throw new InvalidOrderStateException("Closed orders cannot be voided");
+            order.setClosedAt(LocalDateTime.now());
+            order.setStatus(OrderStatus.VOIDED);
+            orderEventService.logEvent(order, OrderEventType.VOIDED, userEmail, (null != null ? null : "Void"));
+            return;
         }
-        order.setStatus(OrderStatus.CLOSED);
-        order.setClosedAt(LocalDateTime.now());
-        order = orderRepository.save(order);
-        orderEventService.logEvent(order, OrderEventType.CLOSED, userEmail, "Order closed");
-        return orderMapper.toOrderResponse(order);
-    }
 
-    @Override
-    public OrderResponseDTO voidOrder(Long id, String reason, String userEmail) {
-        var order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFound(id));
-        if (order.getStatus() == OrderStatus.CLOSED) {
-            throw new InvalidOrderStateException("Closed orders cannot be voided");
-        }
-        order.setStatus(OrderStatus.VOIDED);
-        order.setClosedAt(LocalDateTime.now());
-        order = orderRepository.save(order);
-        orderEventService.logEvent(order, OrderEventType.VOIDED, userEmail, reason != null ? reason : "Void");
-        return orderMapper.toOrderResponse(order);
+        // light transitions
+        order.setStatus(target);
+        if (target == OrderStatus.OPEN) order.setClosedAt(null);
+        orderEventService.logEvent(order, OrderEventType.STATUS_CHANGED, userEmail, "Status: " + from + " → " + target);
     }
 
     @Override

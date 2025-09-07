@@ -23,4 +23,5 @@ public class OrderResponseDTO {
     private Double grandTotal;
     private Double paidTotal;
     private Double balanceDue;
+    private Long numberOfGuests;
 }

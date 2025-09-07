@@ -13,8 +13,6 @@ public interface OrderService {
     OrderResponseDTO getOrderById(Long id);
     List<OrderResponseDTO> getAllOrders();
     void deleteOrder(Long id);
-    OrderResponseDTO updateStatus(Long id, OrderStatusUpdateDTO dto);
-    OrderResponseDTO closeOrder(Long id, String userEmail);
-    OrderResponseDTO voidOrder(Long id, String reason, String userEmail);
+    OrderResponseDTO updateStatus(Long id, OrderStatusUpdateDTO dto, String userEmail);
     OrderResponseDTO serveAllItems(Long orderId, String userEmail);
 }
