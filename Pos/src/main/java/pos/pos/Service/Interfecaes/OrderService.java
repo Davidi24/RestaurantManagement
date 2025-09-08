@@ -15,4 +15,5 @@ public interface OrderService {
     void deleteOrder(Long id);
     OrderResponseDTO updateStatus(Long id, OrderStatusUpdateDTO dto, String userEmail);
     OrderResponseDTO serveAllItems(Long orderId, String userEmail);
+    OrderResponseDTO serveOneItem(Long orderId, Long lineItemId, String userEmail);
 }

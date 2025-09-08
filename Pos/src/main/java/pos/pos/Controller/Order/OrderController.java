@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pos.pos.Config.ApiPaths;
 import pos.pos.Config.Security.AuthUtils;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderCreateDTO;
@@ -14,8 +15,10 @@ import pos.pos.DTO.Order.OrderCollectorDTO.OrderStatusUpdateDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderUpdateDTO;
 import pos.pos.Service.Interfecaes.OrderService;
 
+import java.net.URI;
 import java.util.List;
-import java.util.Map;
+
+//TODO: filter Order liek by order number, date ...
 
 @RestController
 @RequestMapping(value = ApiPaths.Order.BASE, produces = "application/json")
@@ -26,12 +29,20 @@ public class OrderController {
     private final AuthUtils authUtils;
 
     @PostMapping
-    public ResponseEntity<OrderResponseDTO> createOrder(@Valid @RequestBody OrderCreateDTO dto, Authentication authentication) {
-        return ResponseEntity.ok(orderService.createOrder(dto, authUtils.getUserEmail(authentication)));
+    public ResponseEntity<OrderResponseDTO> createOrder(@Valid @RequestBody OrderCreateDTO dto,
+                                                        Authentication authentication) {
+        OrderResponseDTO created = orderService.createOrder(dto, authUtils.getUserEmail(authentication));
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(created.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(created);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<OrderResponseDTO> updateOrder(@PathVariable Long id, @Valid @RequestBody OrderUpdateDTO dto) {
+    public ResponseEntity<OrderResponseDTO> updateOrder(@PathVariable Long id,
+                                                        @Valid @RequestBody OrderUpdateDTO dto) {
         return ResponseEntity.ok(orderService.updateOrder(id, dto));
     }
 
@@ -52,12 +63,13 @@ public class OrderController {
         return ResponseEntity.noContent().build();
     }
 
+    //TODO: only kitchen can change a specific role or the other way around
     @PutMapping("/{id}/status")
-    public ResponseEntity<OrderResponseDTO> updateStatus(@PathVariable Long id, @Valid @RequestBody OrderStatusUpdateDTO dto, Authentication authentication) {
+    public ResponseEntity<OrderResponseDTO> updateStatus(@PathVariable Long id,
+                                                         @Valid @RequestBody OrderStatusUpdateDTO dto,
+                                                         Authentication authentication) {
         return ResponseEntity.ok(orderService.updateStatus(id, dto, authUtils.getUserEmail(authentication)));
     }
-
-
 
     @PutMapping("/{id}/serve-all")
     public ResponseEntity<OrderResponseDTO> serveAll(@PathVariable Long id, Authentication auth) {
@@ -65,4 +77,11 @@ public class OrderController {
         return ResponseEntity.ok(orderService.serveAllItems(id, email));
     }
 
+    @PutMapping("/{orderId}/items/{lineItemId}/serve")
+    public ResponseEntity<OrderResponseDTO> serveOneItem(@PathVariable Long orderId,
+                                                         @PathVariable Long lineItemId,
+                                                         Authentication auth) {
+        String email = authUtils.getUserEmail(auth);
+        return ResponseEntity.ok(orderService.serveOneItem(orderId, lineItemId, email));
+    }
 }

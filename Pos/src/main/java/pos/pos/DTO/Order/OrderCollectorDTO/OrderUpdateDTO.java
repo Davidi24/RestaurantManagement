@@ -12,9 +12,6 @@ import lombok.*;
 @Builder
 public class OrderUpdateDTO {
 
-    @NotNull(message = "Order id is required")
-    private Long id;
-
     @Size(max = 500, message = "Notes cannot exceed 500 characters")
     private String notes;
 

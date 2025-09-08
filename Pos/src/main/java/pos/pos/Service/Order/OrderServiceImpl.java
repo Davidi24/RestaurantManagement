@@ -21,6 +21,8 @@ import pos.pos.Util.OrderNumberFormatter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +35,18 @@ public class OrderServiceImpl implements OrderService {
     private final TotalsService totalsService;
     private final OrderNumberService orderNumberService;
     private final OrderNumberFormatter orderNumberFormatter;
+
+    private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED = Map.of(
+            OrderStatus.OPEN, Set.of(OrderStatus.ON_HOLD, OrderStatus.SENT_TO_KITCHEN, OrderStatus.VOIDED, OrderStatus.CLOSED, OrderStatus.PARTIALLY_PAID, OrderStatus.PAID),
+            OrderStatus.ON_HOLD, Set.of(OrderStatus.OPEN, OrderStatus.SENT_TO_KITCHEN, OrderStatus.VOIDED),
+            OrderStatus.SENT_TO_KITCHEN, Set.of(OrderStatus.READY, OrderStatus.VOIDED),
+            OrderStatus.READY, Set.of(OrderStatus.OPEN, OrderStatus.PARTIALLY_PAID, OrderStatus.PAID, OrderStatus.VOIDED, OrderStatus.CLOSED),
+            OrderStatus.PARTIALLY_PAID, Set.of(OrderStatus.PAID, OrderStatus.CLOSED, OrderStatus.VOIDED),
+            OrderStatus.PAID, Set.of(OrderStatus.CLOSED, OrderStatus.VOIDED),
+            OrderStatus.VOIDED, Set.of(OrderStatus.VOIDED),
+            OrderStatus.CLOSED, Set.of(OrderStatus.CLOSED)
+    );
+
 
     @Override
     @Transactional
@@ -81,7 +95,6 @@ public class OrderServiceImpl implements OrderService {
         return orderMapper.toOrderResponse(orderRepository.save(order));
     }
 
-
     @Override
     public OrderResponseDTO getOrderById(Long id) {
         var order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFound(id));
@@ -109,12 +122,15 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void applyStatusTransition(Order order, OrderStatus target, String userEmail) {
+        if (target == null) {
+            throw new InvalidOrderStateException("Target status is required");
+        }
+
         var from = order.getStatus();
 
-        if (from == OrderStatus.CLOSED && target != OrderStatus.CLOSED)
-            throw new InvalidOrderStateException("Closed orders cannot change status");
-        if (from == OrderStatus.VOIDED && target != OrderStatus.VOIDED)
-            throw new InvalidOrderStateException("Voided orders cannot change status");
+        if (!ALLOWED.getOrDefault(from, Set.of()).contains(target)) {
+            throw new InvalidOrderStateException("Illegal status transition: " + from + " → " + target);
+        }
 
         if (target == OrderStatus.CLOSED) {
             totalsService.recalculateTotals(order);
@@ -129,14 +145,12 @@ public class OrderServiceImpl implements OrderService {
         }
 
         if (target == OrderStatus.VOIDED) {
-            if (from == OrderStatus.CLOSED) throw new InvalidOrderStateException("Closed orders cannot be voided");
             order.setClosedAt(LocalDateTime.now());
             order.setStatus(OrderStatus.VOIDED);
-            orderEventService.logEvent(order, OrderEventType.VOIDED, userEmail, (null != null ? null : "Void"));
+            orderEventService.logEvent(order, OrderEventType.VOIDED, userEmail, "Order voided");
             return;
         }
 
-        // light transitions
         order.setStatus(target);
         if (target == OrderStatus.OPEN) order.setClosedAt(null);
         orderEventService.logEvent(order, OrderEventType.STATUS_CHANGED, userEmail, "Status: " + from + " → " + target);
@@ -152,6 +166,33 @@ public class OrderServiceImpl implements OrderService {
 
         orderRepository.save(order);
         orderEventService.logEvent(order, OrderEventType.ITEM_UPDATED, userEmail, "All items served");
+
+        return orderMapper.toOrderResponse(order);
+    }
+
+    @Override
+    public OrderResponseDTO serveOneItem(Long orderId, Long lineItemId, String userEmail) {
+        var order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFound(orderId));
+
+        var lineItem = order.getLineItems().stream()
+                .filter(li -> li.getId().equals(lineItemId))
+                .findFirst()
+                .orElseThrow(() -> new InvalidOrderStateException("Line item not found in order " + orderId));
+
+        if (lineItem.getFulfillmentStatus() == FulfillmentStatus.SERVED) {
+            throw new InvalidOrderStateException("Line item is already served");
+        }
+        if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.VOIDED) {
+            throw new InvalidOrderStateException("Cannot serve items on a closed or voided order");
+        }
+
+        lineItem.setFulfillmentStatus(FulfillmentStatus.SERVED);
+
+        orderRepository.save(order);
+
+        orderEventService.logEvent(order, OrderEventType.ITEM_UPDATED, userEmail,
+                "Item " + lineItemId + " served");
 
         return orderMapper.toOrderResponse(order);
     }
