@@ -27,6 +27,9 @@ public class OrderSnapshotBuilder {
     private final OptionItemRepository optionItemRepository;
     private final OrderSnapshotMapper mapper;
 
+    // THis code takes the order line item and DTO of order line and takes the public_id in
+    // DTO goes find them in the menu and assign them to orderliness items so now we save it with
+    // ids of a specific order item.
     public void enrichFromCatalog(OrderLineItem lineItem, OrderLineItemCreateDTO dto) {
         if (dto.getMenuItemPublicId() == null) {
             throw new MissingFieldException("menuItemPublicId");
@@ -64,5 +67,6 @@ public class OrderSnapshotBuilder {
                 lineItem.getOptionSnapshots().add(os);
             }
         }
+
     }
 }

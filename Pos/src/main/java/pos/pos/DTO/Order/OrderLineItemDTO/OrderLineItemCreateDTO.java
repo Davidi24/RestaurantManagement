@@ -13,6 +13,7 @@ public class OrderLineItemCreateDTO {
 
     @NotNull
     @Min(1)
+    @Max(500)
     private Integer quantity;
 
     private UUID variantPublicId;

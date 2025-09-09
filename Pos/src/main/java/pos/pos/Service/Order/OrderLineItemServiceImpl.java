@@ -7,10 +7,8 @@ import pos.pos.DTO.Mapper.OrderMapper.OrderLineItemMapper;
 import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemCreateDTO;
 import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemResponseDTO;
 import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemUpdateDTO;
-import pos.pos.Entity.Order.FulfillmentStatus;
-import pos.pos.Entity.Order.Order;
-import pos.pos.Entity.Order.OrderEventType;
-import pos.pos.Entity.Order.OrderLineItem;
+import pos.pos.Entity.Order.*;
+import pos.pos.Exeption.InvalidOrderStateException;
 import pos.pos.Exeption.LineItemOrderMismatchException;
 import pos.pos.Exeption.OrderItemNotFound;
 import pos.pos.Exeption.OrderNotFound;
@@ -21,6 +19,7 @@ import pos.pos.Service.Interfecaes.OrderLineItemService;
 import pos.pos.Service.Interfecaes.TotalsService;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -37,20 +36,44 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
 
     @Override
     public OrderLineItemResponseDTO addLineItem(Long orderId, OrderLineItemCreateDTO dto, String userEmail) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFound(orderId));
+        Order order = loadMutableOrderLocked(orderId);
+
         OrderLineItem lineItem = lineItemMapper.toOrderLineItem(dto, order);
         snapshotBuilder.enrichFromCatalog(lineItem, dto);
+
+        if ((lineItem.getVariantSnapshot() == null || lineItem.getVariantSnapshot().getPriceOverride() == null)
+                && lineItem.getUnitPrice() == null) {
+            throw new InvalidOrderStateException("Missing unit price for item");
+        }
+
+        OrderLineItem incoming = lineItem;
+        var existingLineOpt = order.getLineItems().stream()
+                .filter(existingLine -> sameSpecByPublicIds(existingLine, incoming))
+                .findFirst();
+
+        if (existingLineOpt.isPresent()) {
+            OrderLineItem existingLine = existingLineOpt.get();
+            existingLine.setQuantity(existingLine.getQuantity() + incoming.getQuantity());
+            pricingService.priceLineItem(existingLine);
+            lineItemRepository.save(existingLine);
+            totalsService.recalculateTotals(order);
+            orderEventService.logEvent(order, OrderEventType.ITEM_UPDATED, userEmail,
+                    "Merged qty for " + existingLine.getItemName() + " to x" + existingLine.getQuantity());
+            return lineItemMapper.toOrderLineItemResponse(existingLine);
+        }
+
+        lineItem.setOrder(order);
+        order.getLineItems().add(lineItem);
         pricingService.priceLineItem(lineItem);
-        if (lineItem.getOrder() == null) lineItem.setOrder(order);
-        if (!order.getLineItems().contains(lineItem)) order.getLineItems().add(lineItem);
         lineItem = lineItemRepository.save(lineItem);
         totalsService.recalculateTotals(order);
-        String unitStr = (lineItem.getVariantSnapshot() != null
-                && lineItem.getVariantSnapshot().getPriceOverride() != null)
+
+        String unitStr = (lineItem.getVariantSnapshot() != null && lineItem.getVariantSnapshot().getPriceOverride() != null)
                 ? String.valueOf(lineItem.getVariantSnapshot().getPriceOverride())
                 : String.valueOf(lineItem.getUnitPrice());
-        String metadata = "Added " + lineItem.getItemName() + " x" + lineItem.getQuantity() + " (unit " + unitStr + ")";
-        orderEventService.logEvent(order, OrderEventType.ITEM_ADDED, userEmail, metadata);
+        orderEventService.logEvent(order, OrderEventType.ITEM_ADDED, userEmail,
+                "Added " + lineItem.getItemName() + " x" + lineItem.getQuantity() + " (unit " + unitStr + ")");
+
         return lineItemMapper.toOrderLineItemResponse(lineItem);
     }
 
@@ -112,6 +135,30 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
         li = lineItemRepository.save(li);
         orderEventService.logEvent(order, OrderEventType.ITEM_UPDATED, null, "LineItem " + li.getId() + " status " + status);
         return lineItemMapper.toOrderLineItemResponse(li);
+    }
+
+    // validate order
+    private Order loadMutableOrderLocked(Long orderId){
+        var order = orderRepository.findForUpdate(orderId)
+                .orElseThrow(() -> new OrderNotFound(orderId));
+        if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.VOIDED)
+            throw new InvalidOrderStateException("Order not editable");
+        return order;
+    }
+
+    // check if the same menu item is so it does not save it
+    private boolean sameSpecByPublicIds(OrderLineItem a, OrderLineItem b) {
+        var aVar = a.getVariantSnapshot() != null ? a.getVariantSnapshot().getVariantPublicId() : null;
+        var bVar = b.getVariantSnapshot() != null ? b.getVariantSnapshot().getVariantPublicId() : null;
+
+        var aOpts = a.getOptionSnapshots().stream()
+                .map(OrderOptionSnapshot::getOptionPublicId).sorted().toList();
+        var bOpts = b.getOptionSnapshots().stream()
+                .map(OrderOptionSnapshot::getOptionPublicId).sorted().toList();
+
+        return Objects.equals(a.getMenuItemId(), b.getMenuItemId())
+                && Objects.equals(aVar, bVar)
+                && aOpts.equals(bOpts);
     }
 
 

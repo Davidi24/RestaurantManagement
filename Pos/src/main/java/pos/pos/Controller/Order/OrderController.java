@@ -18,7 +18,7 @@ import pos.pos.Service.Interfecaes.OrderService;
 import java.net.URI;
 import java.util.List;
 
-//TODO: filter Order liek by order number, date ...
+//TODO: filter Order like by order number, date ...
 
 @RestController
 @RequestMapping(value = ApiPaths.Order.BASE, produces = "application/json")

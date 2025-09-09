@@ -8,6 +8,9 @@ import pos.pos.Entity.Order.OrderLineItem;
 @RequiredArgsConstructor
 public class OrderPricingService {
 
+    //take the price of item, if it has any variant then make that the price
+    //then take the price of option. now add these two and multiply them by quantity
+    //see if it has any discount. Add full price and the price after discount to orderLineItem
     public void priceLineItem(OrderLineItem li) {
         double base = li.getUnitPrice() != null ? li.getUnitPrice() : 0.0;
 

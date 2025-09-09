@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import pos.pos.Config.ApiPaths;
 import pos.pos.Config.Security.AuthUtils;
 import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemCreateDTO;
 import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemResponseDTO;
@@ -15,7 +16,7 @@ import pos.pos.Service.Interfecaes.OrderLineItemService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/orders/{orderId}/line-items")
+@RequestMapping(value = ApiPaths.Order.LINE_ITEMS, produces = "application/json")
 @RequiredArgsConstructor
 public class OrderLineItemController {
 
