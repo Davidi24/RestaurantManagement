@@ -36,6 +36,7 @@ public class SecurityConfig {
                     .requestMatchers("/auth/login", "/auth/password/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/auth/logout", "/auth/register").authenticated()
                     .requestMatchers("/users/**").authenticated()
+                    .requestMatchers("/api/v1/sse/**").authenticated()
                     .requestMatchers(ApiPaths.Order.BASE + "/**").authenticated()
                     .requestMatchers(ApiPaths.Menu.BASE + "/**").authenticated()
                     .anyRequest().permitAll()

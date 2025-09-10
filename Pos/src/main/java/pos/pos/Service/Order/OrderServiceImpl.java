@@ -16,6 +16,7 @@ import pos.pos.Repository.Order.OrderRepository;
 import pos.pos.Service.Interfecaes.OrderEventService;
 import pos.pos.Service.Interfecaes.OrderService;
 import pos.pos.Service.Interfecaes.TotalsService;
+import pos.pos.Service.Notification.SseHub;
 import pos.pos.Util.OrderNumberFormatter;
 
 import java.time.LocalDate;
@@ -35,6 +36,7 @@ public class OrderServiceImpl implements OrderService {
     private final TotalsService totalsService;
     private final OrderNumberService orderNumberService;
     private final OrderNumberFormatter orderNumberFormatter;
+    private final SseHub sseHub;
 
     private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED = Map.of(
             OrderStatus.OPEN, Set.of(OrderStatus.ON_HOLD, OrderStatus.SENT_TO_KITCHEN, OrderStatus.VOIDED, OrderStatus.CLOSED, OrderStatus.PARTIALLY_PAID, OrderStatus.PAID),
@@ -68,6 +70,16 @@ public class OrderServiceImpl implements OrderService {
 
         order = orderRepository.save(order);
         orderEventService.logEvent(order, OrderEventType.CREATED, userEmail, "Order created");
+
+        sseHub.publish("admin", "ORDER_CREATED",
+                java.util.Map.of(
+                        "id", order.getId(),
+                        "orderNumber", order.getOrderNumber(),
+                        "tableId", order.getTableId(),
+                        "by", userEmail
+                )
+        );
+
         return orderMapper.toOrderResponse(order);
     }
 

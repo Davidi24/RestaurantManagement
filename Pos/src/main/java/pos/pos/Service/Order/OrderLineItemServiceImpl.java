@@ -78,19 +78,22 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
     }
 
     @Override
-    public OrderLineItemResponseDTO updateLineItem(Long orderId, OrderLineItemUpdateDTO dto) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFound(orderId));
-        OrderLineItem lineItem = lineItemRepository.findById(dto.getId()).orElseThrow(() -> new OrderItemNotFound(orderId, dto.getId()));
+    @Transactional
+    public OrderLineItemResponseDTO updateLineItem(Long orderId, OrderLineItemUpdateDTO dto, String userEmail) {
+        Order order = loadMutableOrderLocked(orderId);
+        OrderLineItem lineItem = lineItemRepository.findById(dto.getId())
+                .orElseThrow(() -> new OrderItemNotFound(orderId, dto.getId()));
         if (!lineItem.getOrder().getId().equals(order.getId())) {
             throw new LineItemOrderMismatchException(lineItem.getId(), order.getId());
         }
-        if (dto.getQuantity() != null) lineItem.setQuantity(dto.getQuantity());
-        if (dto.getItemName() != null) lineItem.setItemName(dto.getItemName());
+        lineItem.setQuantity(dto.getQuantity());
+        if (dto.getItemName() != null && !dto.getItemName().isBlank()) {
+            lineItem.setItemName(dto.getItemName().trim());
+        }
         pricingService.priceLineItem(lineItem);
-        lineItem = lineItemRepository.save(lineItem);
         totalsService.recalculateTotals(order);
         String metadata = "Updated item " + lineItem.getItemName() + " to quantity " + lineItem.getQuantity();
-        orderEventService.logEvent(order, OrderEventType.ITEM_UPDATED, null, metadata);
+        orderEventService.logEvent(order, OrderEventType.ITEM_UPDATED, userEmail, metadata);
         return lineItemMapper.toOrderLineItemResponse(lineItem);
     }
 
@@ -101,18 +104,18 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
     }
 
     @Override
-    public void deleteLineItem(Long orderId, Long lineItemId) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFound(orderId));
-        OrderLineItem lineItem = lineItemRepository.findById(lineItemId).orElseThrow(() -> new OrderItemNotFound(orderId, lineItemId));
+    @Transactional
+    public void deleteLineItem(Long orderId, Long lineItemId, String userEmail) {
+        Order order = loadMutableOrderLocked(orderId);
+        OrderLineItem lineItem = lineItemRepository.findById(lineItemId)
+                .orElseThrow(() -> new OrderItemNotFound(orderId, lineItemId));
         if (!lineItem.getOrder().getId().equals(orderId)) {
             throw new LineItemOrderMismatchException(lineItem.getId(), orderId);
         }
         order.getLineItems().remove(lineItem);
-        lineItem.setOrder(null);
-        lineItemRepository.delete(lineItem);
         totalsService.recalculateTotals(order);
         String metadata = "Deleted item " + lineItem.getItemName() + " (id=" + lineItem.getId() + ")";
-        orderEventService.logEvent(order, OrderEventType.ITEM_DELETED, null, metadata);
+        orderEventService.logEvent(order, OrderEventType.ITEM_DELETED, userEmail, metadata);
     }
 
     @Override
@@ -125,19 +128,33 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
     }
 
     @Override
-    public OrderLineItemResponseDTO updateFulfillmentStatus(Long orderId, Long lineItemId, FulfillmentStatus status) {
-        var order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFound(orderId));
-        var li = lineItemRepository.findById(lineItemId).orElseThrow(() -> new OrderItemNotFound(orderId, lineItemId));
+    @Transactional
+    public OrderLineItemResponseDTO updateFulfillmentStatus(Long orderId, Long lineItemId, FulfillmentStatus status, String userEmail) {
+        Order order = loadMutableOrderLocked(orderId);
+        OrderLineItem li = lineItemRepository.findById(lineItemId)
+                .orElseThrow(() -> new OrderItemNotFound(orderId, lineItemId));
         if (!li.getOrder().getId().equals(orderId)) {
             throw new LineItemOrderMismatchException(li.getId(), orderId);
         }
+        if (!isAllowedTransition(li.getFulfillmentStatus(), status)) {
+            throw new InvalidOrderStateException("Illegal transition " + li.getFulfillmentStatus() + " -> " + status);
+        }
         li.setFulfillmentStatus(status);
-        li = lineItemRepository.save(li);
-        orderEventService.logEvent(order, OrderEventType.ITEM_UPDATED, null, "LineItem " + li.getId() + " status " + status);
+        orderEventService.logEvent(order, OrderEventType.ITEM_UPDATED, userEmail,
+                "LineItem " + li.getId() + " status " + status);
         return lineItemMapper.toOrderLineItemResponse(li);
     }
 
-    // validate order
+    private boolean isAllowedTransition(FulfillmentStatus from, FulfillmentStatus to) {
+        if (from == null) return to == FulfillmentStatus.NEW || to == FulfillmentStatus.FIRED;
+        return switch (from) {
+            case NEW -> to == FulfillmentStatus.FIRED || to == FulfillmentStatus.VOIDED;
+            case FIRED -> to == FulfillmentStatus.READY || to == FulfillmentStatus.VOIDED;
+            case READY -> to == FulfillmentStatus.SERVED || to == FulfillmentStatus.VOIDED;
+            case SERVED, VOIDED -> false;
+        };
+    }
+
     private Order loadMutableOrderLocked(Long orderId){
         var order = orderRepository.findForUpdate(orderId)
                 .orElseThrow(() -> new OrderNotFound(orderId));
@@ -146,7 +163,6 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
         return order;
     }
 
-    // check if the same menu item is so it does not save it
     private boolean sameSpecByPublicIds(OrderLineItem a, OrderLineItem b) {
         var aVar = a.getVariantSnapshot() != null ? a.getVariantSnapshot().getVariantPublicId() : null;
         var bVar = b.getVariantSnapshot() != null ? b.getVariantSnapshot().getVariantPublicId() : null;
@@ -160,7 +176,4 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
                 && Objects.equals(aVar, bVar)
                 && aOpts.equals(bOpts);
     }
-
-
-
 }

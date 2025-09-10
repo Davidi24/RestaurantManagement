@@ -8,6 +8,7 @@ import pos.pos.DTO.Order.OrderEventResponseDTO;
 import pos.pos.Entity.Order.Order;
 import pos.pos.Entity.Order.OrderEvent;
 import pos.pos.Entity.Order.OrderEventType;
+import pos.pos.Exeption.OrderNotFound;
 import pos.pos.Repository.Order.OrderEventRepository;
 import pos.pos.Repository.Order.OrderRepository;
 import pos.pos.Service.Interfecaes.OrderEventService;
@@ -37,8 +38,9 @@ public class OrderEventServiceImpl implements OrderEventService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrderEventResponseDTO> getEvents(Long orderId) {
-        orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found"));
+        orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFound(orderId));
         return eventRepository.findByOrder_Id(orderId).stream()
                 .map(eventMapper::toOrderEventResponse)
                 .toList();

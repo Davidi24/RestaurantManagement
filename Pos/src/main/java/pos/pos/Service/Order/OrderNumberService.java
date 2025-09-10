@@ -14,6 +14,7 @@ public class OrderNumberService {
 
     private final OrderNumberCounterRepository repo;
 
+    // this function is used to create order number
     @Transactional
     public long nextFor(LocalDate date, Long tableId) {
         var existing = repo.findForUpdate(date, tableId)

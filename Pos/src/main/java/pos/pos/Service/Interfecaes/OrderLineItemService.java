@@ -9,9 +9,9 @@ import java.util.List;
 
 public interface OrderLineItemService {
     OrderLineItemResponseDTO addLineItem(Long orderId, OrderLineItemCreateDTO dto, String userEmail);
-    OrderLineItemResponseDTO updateLineItem(Long orderId, OrderLineItemUpdateDTO dto);
+    OrderLineItemResponseDTO updateLineItem(Long orderId, OrderLineItemUpdateDTO dto, String userEmail);
     List<OrderLineItemResponseDTO> getLineItems(Long orderId);
-    void deleteLineItem(Long orderId, Long lineItemId);
+    void deleteLineItem(Long orderId, Long lineItemId, String userEmail);
     OrderLineItemResponseDTO getLineItemById(Long orderId, Long lineItemId);
-    OrderLineItemResponseDTO updateFulfillmentStatus(Long orderId, Long lineItemId, FulfillmentStatus status);
+    OrderLineItemResponseDTO updateFulfillmentStatus(Long orderId, Long lineItemId, FulfillmentStatus status, String userEmail);
 }

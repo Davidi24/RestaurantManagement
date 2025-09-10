@@ -28,17 +28,15 @@ public class OrderLineItemController {
             @PathVariable Long orderId,
             @Valid @RequestBody OrderLineItemCreateDTO dto,
             Authentication authentication) {
-        String email = authUtils.getUserEmail(authentication);
-        return ResponseEntity.ok(orderLineItemService.addLineItem(orderId, dto, email));
+        return ResponseEntity.ok(orderLineItemService.addLineItem(orderId, dto, authUtils.getUserEmail(authentication)));
     }
 
-    @PutMapping("/{lineItemId}")
+    @PutMapping
     public ResponseEntity<OrderLineItemResponseDTO> updateLineItem(
             @PathVariable Long orderId,
-            @PathVariable Long lineItemId,
-            @Valid @RequestBody OrderLineItemUpdateDTO dto) {
-        dto.setId(lineItemId);
-        return ResponseEntity.ok(orderLineItemService.updateLineItem(orderId, dto));
+            @Valid @RequestBody OrderLineItemUpdateDTO dto,
+            Authentication authentication) {
+        return ResponseEntity.ok(orderLineItemService.updateLineItem(orderId, dto, authUtils.getUserEmail(authentication)));
     }
 
     @GetMapping
@@ -47,8 +45,11 @@ public class OrderLineItemController {
     }
 
     @DeleteMapping("/{lineItemId}")
-    public ResponseEntity<Void> deleteLineItem(@PathVariable Long orderId, @PathVariable Long lineItemId) {
-        orderLineItemService.deleteLineItem(orderId, lineItemId);
+    public ResponseEntity<Void> deleteLineItem(
+            @PathVariable Long orderId,
+            @PathVariable Long lineItemId,
+            Authentication authentication) {
+        orderLineItemService.deleteLineItem(orderId, lineItemId, authUtils.getUserEmail(authentication));
         return ResponseEntity.noContent().build();
     }
 
@@ -63,7 +64,9 @@ public class OrderLineItemController {
     public ResponseEntity<OrderLineItemResponseDTO> setFulfillment(
             @PathVariable Long orderId,
             @PathVariable Long lineItemId,
-            @RequestParam FulfillmentStatus status) {
-        return ResponseEntity.ok(orderLineItemService.updateFulfillmentStatus(orderId, lineItemId, status));
+            @RequestParam FulfillmentStatus status,
+            Authentication authentication) {
+        return ResponseEntity.ok(orderLineItemService.updateFulfillmentStatus(
+                orderId, lineItemId, status, authUtils.getUserEmail(authentication)));
     }
 }

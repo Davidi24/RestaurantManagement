@@ -10,7 +10,6 @@ import org.springframework.util.StringUtils;
 public class AuthUtils {
 
     public String getUserEmail(Authentication authentication) {
-        System.out.println("Hereeeeeeeeeeeeeee");
         if (!(authentication instanceof JwtAuthenticationToken jwtAuth)) {
             throw new AuthenticationCredentialsNotFoundException("No valid JWT authentication found");
         }

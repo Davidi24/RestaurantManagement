@@ -8,6 +8,7 @@ class PosApplicationTests {
 
     @Test
     void contextLoads() {
+        System.out.println("here");
     }
 
 }
