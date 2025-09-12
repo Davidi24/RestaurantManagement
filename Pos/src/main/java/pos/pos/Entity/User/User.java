@@ -36,7 +36,7 @@ public class User {
   @CollectionTable(name="user_roles", joinColumns=@JoinColumn(name="user_id"))
   @Column(name="role")
   @Builder.Default
-  private Set<Role> roles = Set.of(Role.USER);
+  private Set<UserRole> roles = Set.of(UserRole.USER);
 
   @Builder.Default
   private boolean enabled = true;

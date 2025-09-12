@@ -1,6 +1,6 @@
 package pos.pos.Entity.User;
 
-public enum Role {
+public enum UserRole {
   USER,
   ADMIN,
   SUPERADMIN,

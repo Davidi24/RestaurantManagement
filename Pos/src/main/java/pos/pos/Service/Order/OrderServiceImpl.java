@@ -9,6 +9,7 @@ import pos.pos.DTO.Order.OrderCollectorDTO.OrderResponseDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderStatusUpdateDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderUpdateDTO;
 import pos.pos.Entity.Order.*;
+import pos.pos.Entity.User.UserRole;
 import pos.pos.Exeption.InvalidOrderStateException;
 import pos.pos.Exeption.OpenOrderExistsException;
 import pos.pos.Exeption.OrderNotFound;
@@ -17,6 +18,8 @@ import pos.pos.Service.Interfecaes.OrderEventService;
 import pos.pos.Service.Interfecaes.OrderService;
 import pos.pos.Service.Interfecaes.TotalsService;
 import pos.pos.Service.Notification.SseHub;
+
+import pos.pos.Util.NotificationSender;
 import pos.pos.Util.OrderNumberFormatter;
 
 import java.time.LocalDate;
@@ -36,7 +39,8 @@ public class OrderServiceImpl implements OrderService {
     private final TotalsService totalsService;
     private final OrderNumberService orderNumberService;
     private final OrderNumberFormatter orderNumberFormatter;
-    private final SseHub sseHub;
+    private final NotificationSender notificationSender;
+
 
     private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED = Map.of(
             OrderStatus.OPEN, Set.of(OrderStatus.ON_HOLD, OrderStatus.SENT_TO_KITCHEN, OrderStatus.VOIDED, OrderStatus.CLOSED, OrderStatus.PARTIALLY_PAID, OrderStatus.PAID),
@@ -71,16 +75,16 @@ public class OrderServiceImpl implements OrderService {
         order = orderRepository.save(order);
         orderEventService.logEvent(order, OrderEventType.CREATED, userEmail, "Order created");
 
-        sseHub.publish("admin", "ORDER_CREATED",
-                java.util.Map.of(
-                        "id", order.getId(),
-                        "orderNumber", order.getOrderNumber(),
-                        "tableId", order.getTableId(),
-                        "by", userEmail
-                )
-        );
+        var orderResponse = orderMapper.toOrderResponse(order);
+        notificationSender.sendMessage(
+                OrderEventType.CREATED.name(),
+                orderResponse,
+                UserRole.SUPERADMIN.name(),
+                UserRole.KITCHEN.name(),
+                UserRole.ADMIN.name()
+                );
 
-        return orderMapper.toOrderResponse(order);
+        return orderResponse;
     }
 
     @Override
