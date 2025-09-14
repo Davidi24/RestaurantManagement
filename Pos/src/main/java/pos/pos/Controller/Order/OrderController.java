@@ -13,7 +13,7 @@ import pos.pos.DTO.Order.OrderCollectorDTO.OrderCreateDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderResponseDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderStatusUpdateDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderUpdateDTO;
-import pos.pos.Service.Interfecaes.OrderService;
+import pos.pos.Service.Interfecaes.Order.OrderService;
 
 import java.net.URI;
 import java.util.List;

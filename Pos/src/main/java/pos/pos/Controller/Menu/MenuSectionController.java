@@ -9,7 +9,7 @@ import pos.pos.Config.ApiPaths;
 import pos.pos.DTO.Menu.MenuSectionDTO.MenuSectionCreateRequest;
 import pos.pos.DTO.Menu.MenuSectionDTO.MenuSectionResponse;
 import pos.pos.DTO.Menu.MenuSectionDTO.MenuSectionUpdateRequest;
-import pos.pos.Service.Interfecaes.MenuSectionService;
+import pos.pos.Service.Interfecaes.Menu.MenuSectionService;
 
 import java.util.List;
 

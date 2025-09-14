@@ -1,4 +1,4 @@
-package pos.pos.Service.Interfecaes;
+package pos.pos.Service.Interfecaes.Order;
 
 import pos.pos.DTO.Order.OrderDiscount.OrderDiscountCreateDTO;
 import pos.pos.DTO.Order.OrderDiscount.OrderDiscountResponseDTO;

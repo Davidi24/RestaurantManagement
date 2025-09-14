@@ -16,7 +16,7 @@ import pos.pos.Exeption.MenuNotFoundException;
 import pos.pos.Exeption.MenuSectionNotFound;
 import pos.pos.Repository.Menu.MenuRepository;
 import pos.pos.Repository.Menu.MenuSectionRepository;
-import pos.pos.Service.Interfecaes.MenuSectionService;
+import pos.pos.Service.Interfecaes.Menu.MenuSectionService;
 import pos.pos.Util.OrderingManger;
 
 import java.math.BigDecimal;

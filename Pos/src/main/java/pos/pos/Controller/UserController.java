@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import pos.pos.DTO.User.UserResponse;
-import pos.pos.Service.Interfecaes.UserService;
+import pos.pos.Service.Interfecaes.User.UserService;
 
 @RestController
 @RequestMapping("/users")

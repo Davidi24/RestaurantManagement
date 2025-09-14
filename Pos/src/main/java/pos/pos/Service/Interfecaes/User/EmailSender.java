@@ -1,5 +1,5 @@
 // Email sender port
-package pos.pos.Service.Interfecaes;
+package pos.pos.Service.Interfecaes.User;
 
 
 public interface EmailSender {

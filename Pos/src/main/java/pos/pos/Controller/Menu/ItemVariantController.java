@@ -10,7 +10,7 @@ import pos.pos.Config.ApiPaths;
 import pos.pos.DTO.Menu.VariantDTO.ItemVariantCreateRequest;
 import pos.pos.DTO.Menu.VariantDTO.ItemVariantResponse;
 import pos.pos.DTO.Menu.VariantDTO.ItemVariantUpdateRequest;
-import pos.pos.Service.Interfecaes.ItemVariantService;
+import pos.pos.Service.Interfecaes.Menu.ItemVariantService;
 
 import java.util.List;
 

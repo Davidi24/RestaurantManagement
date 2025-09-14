@@ -10,7 +10,7 @@ import pos.pos.Config.Security.AuthUtils;
 import pos.pos.DTO.Order.OrderDiscount.OrderDiscountCreateDTO;
 import pos.pos.DTO.Order.OrderDiscount.OrderDiscountResponseDTO;
 import pos.pos.DTO.Order.OrderDiscount.OrderDiscountUpdateDTO;
-import pos.pos.Service.Interfecaes.OrderDiscountService;
+import pos.pos.Service.Interfecaes.Order.OrderDiscountService;
 
 import java.util.List;
 

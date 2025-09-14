@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import pos.pos.DTO.Menu.MenuDTO.MenuRequest;
 import pos.pos.DTO.Menu.MenuDTO.MenuResponse;
 import pos.pos.DTO.Menu.MenuDTO.MenuTreeResponse;
-import pos.pos.Service.Interfecaes.MenuService;
+import pos.pos.Service.Interfecaes.Menu.MenuService;
 import pos.pos.Config.ApiPaths;
 
 import java.util.List;

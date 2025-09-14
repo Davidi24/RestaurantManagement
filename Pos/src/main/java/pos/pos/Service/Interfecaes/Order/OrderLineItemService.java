@@ -1,4 +1,4 @@
-package pos.pos.Service.Interfecaes;
+package pos.pos.Service.Interfecaes.Order;
 
 import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemCreateDTO;
 import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemResponseDTO;

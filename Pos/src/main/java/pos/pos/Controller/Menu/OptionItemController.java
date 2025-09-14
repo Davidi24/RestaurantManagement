@@ -9,7 +9,7 @@ import pos.pos.Config.ApiPaths;
 import pos.pos.DTO.Menu.OptionDTO.OptionItemCreateRequest;
 import pos.pos.DTO.Menu.OptionDTO.OptionItemResponse;
 import pos.pos.DTO.Menu.OptionDTO.OptionItemUpdateRequest;
-import pos.pos.Service.Interfecaes.OptionItemService;
+import pos.pos.Service.Interfecaes.Menu.OptionItemService;
 
 import java.util.List;
 

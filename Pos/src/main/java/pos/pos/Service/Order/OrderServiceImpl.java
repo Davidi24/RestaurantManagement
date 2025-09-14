@@ -3,6 +3,7 @@ package pos.pos.Service.Order;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pos.pos.DTO.Mapper.KDS.KdsMapper;
 import pos.pos.DTO.Mapper.OrderMapper.OrderMapper;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderCreateDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderResponseDTO;
@@ -14,10 +15,10 @@ import pos.pos.Exeption.InvalidOrderStateException;
 import pos.pos.Exeption.OpenOrderExistsException;
 import pos.pos.Exeption.OrderNotFound;
 import pos.pos.Repository.Order.OrderRepository;
-import pos.pos.Service.Interfecaes.OrderEventService;
-import pos.pos.Service.Interfecaes.OrderService;
-import pos.pos.Service.Interfecaes.TotalsService;
-import pos.pos.Service.Notification.SseHub;
+import pos.pos.Service.Interfecaes.Order.OrderEventService;
+import pos.pos.Service.Interfecaes.Order.OrderService;
+import pos.pos.Service.Interfecaes.Order.TotalsService;
+import pos.pos.Entity.KDS.KdsTicket;
 
 import pos.pos.Util.NotificationSender;
 import pos.pos.Util.OrderNumberFormatter;
@@ -40,6 +41,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderNumberService orderNumberService;
     private final OrderNumberFormatter orderNumberFormatter;
     private final NotificationSender notificationSender;
+    private final KdsMapper kdsMapper;
 
 
     private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED = Map.of(
@@ -169,6 +171,16 @@ public class OrderServiceImpl implements OrderService {
 
         order.setStatus(target);
         if (target == OrderStatus.OPEN) order.setClosedAt(null);
+
+        if (target == OrderStatus.SENT_TO_KITCHEN) {
+            KdsTicket kdsTicket = kdsMapper.toKdsTicket(order); // build KdsTicket DTO
+            notificationSender.sendMessage(
+                    "KDS_TICKET_CREATED",
+                    kdsTicket,
+                    UserRole.KITCHEN.name()
+            );
+        }
+
         orderEventService.logEvent(order, OrderEventType.STATUS_CHANGED, userEmail, "Status: " + from + " → " + target);
     }
 

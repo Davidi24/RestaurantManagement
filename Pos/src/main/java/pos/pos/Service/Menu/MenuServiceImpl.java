@@ -7,11 +7,10 @@ import pos.pos.DTO.Mapper.MenuMapper.MenuMapper;
 import pos.pos.DTO.Menu.MenuDTO.MenuRequest;
 import pos.pos.DTO.Menu.MenuDTO.MenuResponse;
 import pos.pos.DTO.Menu.MenuDTO.MenuTreeResponse;
-import pos.pos.Entity.Menu.Menu;
 import pos.pos.Exeption.AlreadyExistsException;
 import pos.pos.Exeption.MenuNotFoundException;
 import pos.pos.Repository.Menu.MenuRepository;
-import pos.pos.Service.Interfecaes.MenuService;
+import pos.pos.Service.Interfecaes.Menu.MenuService;
 
 import java.util.List;
 

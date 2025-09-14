@@ -20,7 +20,7 @@ import pos.pos.Repository.Menu.MenuItemRepository;
 import pos.pos.Repository.Menu.MenuSectionRepository;
 import pos.pos.Repository.Order.OptionGroupRepository;
 import pos.pos.Repository.Order.OptionItemRepository;
-import pos.pos.Service.Interfecaes.OptionItemService;
+import pos.pos.Service.Interfecaes.Menu.OptionItemService;
 import pos.pos.Util.OrderingManger;
 
 import java.util.List;

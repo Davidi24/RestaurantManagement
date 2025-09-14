@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pos.pos.DTO.Order.OrderEventResponseDTO;
-import pos.pos.Service.Interfecaes.OrderEventService;
+import pos.pos.Service.Interfecaes.Order.OrderEventService;
 
 import java.util.List;
 

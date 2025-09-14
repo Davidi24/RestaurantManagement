@@ -1,4 +1,4 @@
-package pos.pos.Service.Interfecaes;
+package pos.pos.Service.Interfecaes.Order;
 
 import pos.pos.DTO.Order.OrderEventResponseDTO;
 import pos.pos.Entity.Order.OrderEventType;

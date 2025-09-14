@@ -10,7 +10,7 @@ import pos.pos.Config.ApiPaths;
 import pos.pos.DTO.Menu.MenuItemDTO.MenuItemCreateRequest;
 import pos.pos.DTO.Menu.MenuItemDTO.MenuItemResponse;
 import pos.pos.DTO.Menu.MenuItemDTO.MenuItemUpdateRequest;
-import pos.pos.Service.Interfecaes.MenuItemService;
+import pos.pos.Service.Interfecaes.Menu.MenuItemService;
 
 import java.util.List;
 

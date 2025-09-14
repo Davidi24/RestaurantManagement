@@ -1,4 +1,4 @@
-package pos.pos.Service.Interfecaes;
+package pos.pos.Service.Interfecaes.Menu;
 
 import pos.pos.DTO.Menu.VariantDTO.ItemVariantCreateRequest;
 import pos.pos.DTO.Menu.VariantDTO.ItemVariantResponse;

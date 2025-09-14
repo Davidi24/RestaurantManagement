@@ -14,9 +14,9 @@ import pos.pos.Exeption.OrderItemNotFound;
 import pos.pos.Exeption.OrderNotFound;
 import pos.pos.Repository.Order.OrderLineItemRepository;
 import pos.pos.Repository.Order.OrderRepository;
-import pos.pos.Service.Interfecaes.OrderEventService;
-import pos.pos.Service.Interfecaes.OrderLineItemService;
-import pos.pos.Service.Interfecaes.TotalsService;
+import pos.pos.Service.Interfecaes.Order.OrderEventService;
+import pos.pos.Service.Interfecaes.Order.OrderLineItemService;
+import pos.pos.Service.Interfecaes.Order.TotalsService;
 
 import java.util.List;
 import java.util.Objects;

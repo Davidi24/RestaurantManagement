@@ -1,4 +1,4 @@
-package pos.pos.Service.Interfecaes;
+package pos.pos.Service.Interfecaes.User;
 
 
 import pos.pos.DTO.User.RegisterRequest;

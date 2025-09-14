@@ -21,4 +21,12 @@ public final class ApiPaths {
         public static final String EVENTS = BASE + "/{orderId}/events";
         public static final String TOTALS = BASE + "/{orderId}/totals";
     }
+
+    public static final class Notification {
+        public static final String BASE = V1 + "/notifications";
+    }
+
+    public static final class Kds {
+        public static final String BASE = V1 + "/kds";
+    }
 }

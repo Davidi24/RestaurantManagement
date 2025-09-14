@@ -12,7 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import pos.pos.Config.JWT.JwtService;
 import pos.pos.DTO.User.*;
-import pos.pos.Service.Interfecaes.UserService;
+import pos.pos.Service.Interfecaes.User.UserService;
 import pos.pos.Service.User.PasswordResetService;
 
 

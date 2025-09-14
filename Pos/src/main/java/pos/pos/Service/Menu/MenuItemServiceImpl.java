@@ -14,7 +14,7 @@ import pos.pos.Exeption.MenuItemException;
 import pos.pos.Exeption.MenuSectionNotFound;
 import pos.pos.Repository.Menu.MenuItemRepository;
 import pos.pos.Repository.Menu.MenuSectionRepository;
-import pos.pos.Service.Interfecaes.MenuItemService;
+import pos.pos.Service.Interfecaes.Menu.MenuItemService;
 import pos.pos.Util.OrderingManger;
 
 import java.util.List;

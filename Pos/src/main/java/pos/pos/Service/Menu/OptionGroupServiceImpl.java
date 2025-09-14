@@ -17,7 +17,7 @@ import pos.pos.Exeption.OptionGroupNotFoundException;
 import pos.pos.Repository.Menu.MenuItemRepository;
 import pos.pos.Repository.Menu.MenuSectionRepository;
 import pos.pos.Repository.Order.OptionGroupRepository;
-import pos.pos.Service.Interfecaes.OptionGroupService;
+import pos.pos.Service.Interfecaes.Menu.OptionGroupService;
 import pos.pos.Util.OrderingManger;
 
 import java.util.List;

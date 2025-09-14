@@ -11,7 +11,7 @@ import pos.pos.Entity.Order.OrderEventType;
 import pos.pos.Exeption.OrderNotFound;
 import pos.pos.Repository.Order.OrderEventRepository;
 import pos.pos.Repository.Order.OrderRepository;
-import pos.pos.Service.Interfecaes.OrderEventService;
+import pos.pos.Service.Interfecaes.Order.OrderEventService;
 
 import java.time.LocalDateTime;
 import java.util.List;

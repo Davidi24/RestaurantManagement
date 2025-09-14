@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pos.pos.Entity.Order.Order;
 import pos.pos.Entity.Order.OrderTotals;
 import pos.pos.Repository.Order.OrderRepository;
-import pos.pos.Service.Interfecaes.TotalsService;
+import pos.pos.Service.Interfecaes.Order.TotalsService;
 
 @Service
 @RequiredArgsConstructor

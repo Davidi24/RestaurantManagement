@@ -15,13 +15,14 @@ import pos.pos.Exeption.MenuItemException;
 import pos.pos.Exeption.MenuSectionNotFound;
 import pos.pos.Repository.Menu.ItemVariantRepository;
 import pos.pos.Repository.Menu.MenuItemRepository;
+import pos.pos.Service.Interfecaes.Menu.ItemVariantService;
 import pos.pos.Util.OrderingManger;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class ItemVariantServiceImpl implements pos.pos.Service.Interfecaes.ItemVariantService {
+public class ItemVariantServiceImpl implements ItemVariantService {
 
     private final MenuItemRepository itemRepository;
     private final ItemVariantRepository variantRepository;

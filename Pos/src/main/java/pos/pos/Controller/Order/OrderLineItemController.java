@@ -11,7 +11,7 @@ import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemCreateDTO;
 import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemResponseDTO;
 import pos.pos.DTO.Order.OrderLineItemDTO.OrderLineItemUpdateDTO;
 import pos.pos.Entity.Order.FulfillmentStatus;
-import pos.pos.Service.Interfecaes.OrderLineItemService;
+import pos.pos.Service.Interfecaes.Order.OrderLineItemService;
 
 import java.util.List;
 
