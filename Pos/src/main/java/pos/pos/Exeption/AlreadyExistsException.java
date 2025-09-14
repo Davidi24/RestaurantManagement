@@ -4,4 +4,8 @@ public class AlreadyExistsException extends AppException {
   public AlreadyExistsException(String resourceName, String value) {
     super(resourceName + " already exists: " + value);
   }
+
+  public AlreadyExistsException(String message) {
+    super(message);
+  }
 }
