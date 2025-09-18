@@ -34,7 +34,6 @@ class MenuIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    @Transactional
     void createAndGetMenu() throws Exception {
 
         String body = """
