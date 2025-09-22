@@ -18,6 +18,8 @@ public class OrderPricingService {
             base = li.getVariantSnapshot().getPriceOverride();
         }
 
+        li.setUnitPrice(base);
+
         double options = 0.0;
         if (li.getOptionSnapshots() != null) {
             for (var os : li.getOptionSnapshots()) {

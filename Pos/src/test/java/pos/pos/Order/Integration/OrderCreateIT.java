@@ -12,16 +12,6 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Creation-focused integration tests.
- *
- * Covered cases:
- * 1) Happy path create (OPEN, retrievable)
- * 2) Same-table open-order constraint (second create → 409)
- * 3) Validation errors (e.g., numberOfGuests < 1 → 400)
- * 4) Unauthorized (no JWT) → 401
- * 5) Revoked token (Authorization header Bearer ... + mocked as revoked) → 401
- */
 class OrderCreateIT extends AbstractOrderIT {
 
     /** Happy path: POST /orders creates an OPEN order retrievable by id. */
@@ -42,10 +32,8 @@ class OrderCreateIT extends AbstractOrderIT {
     void test02_same_table_open_order_conflict() throws Exception {
         long tableId = nextTableId();
 
-        // First create succeeds
         createOrder(tableId, 2);
 
-        // Second create on SAME table should fail with 409 (OpenOrderExistsException)
         String body = """
             {
               "tableId": %d,
@@ -57,7 +45,7 @@ class OrderCreateIT extends AbstractOrderIT {
                         .with(jwtAdmin())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isConflict()) // 409
+                .andExpect(status().isConflict())
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.error", anyOf(
                         equalTo("OpenOrderExistsException"),
@@ -84,7 +72,6 @@ class OrderCreateIT extends AbstractOrderIT {
                         .content(invalidGuests))
                 .andExpect(status().isBadRequest());
 
-        // tableId = 0 violates @Min(1)
         String invalidTable = """
             {
               "tableId": 0,

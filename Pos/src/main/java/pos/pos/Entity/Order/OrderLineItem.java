@@ -22,9 +22,10 @@ public class OrderLineItem {
     @Enumerated(EnumType.STRING)
     private FulfillmentStatus fulfillmentStatus;
 
-    private Double lineSubtotal;
-    private Double lineDiscount;
-    private Double lineGrandTotal;
+    private Double lineSubtotal;   // total before discount: (unitPrice + option prices) * quantity
+    private Double lineDiscount;   // total discount amount applied to this line
+    private Double lineGrandTotal; // final amount to pay for this line: lineSubtotal - lineDiscount
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")

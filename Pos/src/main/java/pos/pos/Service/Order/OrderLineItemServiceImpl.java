@@ -1,6 +1,7 @@
 package pos.pos.Service.Order;
 
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pos.pos.DTO.Mapper.OrderMapper.OrderLineItemMapper;
@@ -38,43 +39,17 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
     public OrderLineItemResponseDTO addLineItem(Long orderId, OrderLineItemCreateDTO dto, String userEmail) {
         Order order = loadMutableOrderLocked(orderId);
 
-        OrderLineItem lineItem = lineItemMapper.toOrderLineItem(dto, order);
-        snapshotBuilder.enrichFromCatalog(lineItem, dto);
+        OrderLineItem incoming = lineItemMapper.toOrderLineItem(dto, order);
+        snapshotBuilder.enrichFromCatalog(incoming, dto);
+        ensureHasUnitPrice(incoming);
 
-        if ((lineItem.getVariantSnapshot() == null || lineItem.getVariantSnapshot().getPriceOverride() == null)
-                && lineItem.getUnitPrice() == null) {
-            throw new InvalidOrderStateException("Missing unit price for item");
+        OrderLineItem mergeTarget = findMergeTarget(order, incoming);
+
+        if (mergeTarget != null) {
+            return mergeIntoExisting(order, mergeTarget, incoming.getQuantity(), userEmail);
         }
 
-        OrderLineItem incoming = lineItem;
-        var existingLineOpt = order.getLineItems().stream()
-                .filter(existingLine -> sameSpecByPublicIds(existingLine, incoming))
-                .findFirst();
-
-        if (existingLineOpt.isPresent()) {
-            OrderLineItem existingLine = existingLineOpt.get();
-            existingLine.setQuantity(existingLine.getQuantity() + incoming.getQuantity());
-            pricingService.priceLineItem(existingLine);
-            lineItemRepository.save(existingLine);
-            totalsService.recalculateTotals(order);
-            orderEventService.logEvent(order, OrderEventType.ITEM_UPDATED, userEmail,
-                    "Merged qty for " + existingLine.getItemName() + " to x" + existingLine.getQuantity());
-            return lineItemMapper.toOrderLineItemResponse(existingLine);
-        }
-
-        lineItem.setOrder(order);
-        order.getLineItems().add(lineItem);
-        pricingService.priceLineItem(lineItem);
-        lineItem = lineItemRepository.save(lineItem);
-        totalsService.recalculateTotals(order);
-
-        String unitStr = (lineItem.getVariantSnapshot() != null && lineItem.getVariantSnapshot().getPriceOverride() != null)
-                ? String.valueOf(lineItem.getVariantSnapshot().getPriceOverride())
-                : String.valueOf(lineItem.getUnitPrice());
-        orderEventService.logEvent(order, OrderEventType.ITEM_ADDED, userEmail,
-                "Added " + lineItem.getItemName() + " x" + lineItem.getQuantity() + " (unit " + unitStr + ")");
-
-        return lineItemMapper.toOrderLineItemResponse(lineItem);
+        return addAsNewLine(order, incoming, userEmail);
     }
 
     @Override
@@ -145,6 +120,102 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
         return lineItemMapper.toOrderLineItemResponse(li);
     }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+    private static final String ERR_MISSING_UNIT_PRICE = "Missing unit price for item";
+
+    /** Ensures the line item has a concrete unit price, either from variant override or its own field. */
+    private void ensureHasUnitPrice(OrderLineItem li) {
+        if (unitPrice(li) == null) {
+            throw new InvalidOrderStateException(ERR_MISSING_UNIT_PRICE);
+        }
+    }
+
+    /** Returns the effective unit price (variant override > item unit price) or null if not resolvable. */
+    private Double unitPrice(OrderLineItem li) {
+        var vs = li.getVariantSnapshot();
+        if (vs != null && vs.getPriceOverride() != null) return vs.getPriceOverride();
+        return li.getUnitPrice();
+    }
+
+    /** Unit price as a short string (e.g., "7.50"). */
+    private String unitPriceStr(OrderLineItem li) {
+        Double p = unitPrice(li);
+        return (p == null) ? "0.00" : String.format("%.2f", p);
+    }
+
+    /**
+     * Finds an existing line item in the order that matches the incoming item's spec
+     * (same menu item / variant / options by public IDs).
+     */
+    private OrderLineItem findMergeTarget(Order order, OrderLineItem incoming) {
+        return order.getLineItems().stream()
+                .filter(existing -> sameSpecByPublicIds(existing, incoming))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /** Merges quantity into an existing line, re-prices, persists, updates totals, and logs. */
+    private OrderLineItemResponseDTO mergeIntoExisting(
+            Order order,
+            OrderLineItem target,
+            int qtyToAdd,
+            String userEmail
+    ) {
+        target.setQuantity(target.getQuantity() + qtyToAdd);
+        pricingService.priceLineItem(target);        // also normalizes unitPrice
+        lineItemRepository.save(target);
+        totalsService.recalculateTotals(order);
+
+        orderEventService.logEvent(
+                order,
+                OrderEventType.ITEM_UPDATED,
+                userEmail,
+                String.format("Merged %s: new qty x%d", target.getItemName(), target.getQuantity())
+        );
+
+        return lineItemMapper.toOrderLineItemResponse(target);
+    }
+
+    /** Adds a new line, prices it, persists, updates totals, and logs. */
+    private OrderLineItemResponseDTO addAsNewLine(
+            Order order,
+            OrderLineItem li,
+            String userEmail
+    ) {
+        li.setOrder(order);
+        order.getLineItems().add(li);
+
+        pricingService.priceLineItem(li);
+        OrderLineItem saved = lineItemRepository.save(li);
+        totalsService.recalculateTotals(order);
+
+        orderEventService.logEvent(
+                order,
+                OrderEventType.ITEM_ADDED,
+                userEmail,
+                String.format("Added %s x%d (unit %s)", saved.getItemName(), saved.getQuantity(), unitPriceStr(saved))
+        );
+
+        return lineItemMapper.toOrderLineItemResponse(saved);
+    }
+
+
+
+    // This function takes an order id it checks if it exist if yes then check if you can edit it
+    // byschecking the status. If it is an invalid status like CLOSED or VOIDED then you can not edit it
+    private @NotNull Order loadMutableOrderLocked(Long orderId) {
+        var order = orderRepository.findForUpdate(orderId)
+                .orElseThrow(() -> new OrderNotFound(orderId));
+        if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.VOIDED)
+            throw new InvalidOrderStateException("Order not editable");
+        return order;
+    }
+
+
     private boolean isAllowedTransition(FulfillmentStatus from, FulfillmentStatus to) {
         if (from == null) return to == FulfillmentStatus.NEW || to == FulfillmentStatus.FIRED;
         return switch (from) {
@@ -155,13 +226,9 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
         };
     }
 
-    private Order loadMutableOrderLocked(Long orderId){
-        var order = orderRepository.findForUpdate(orderId)
-                .orElseThrow(() -> new OrderNotFound(orderId));
-        if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.VOIDED)
-            throw new InvalidOrderStateException("Order not editable");
-        return order;
-    }
+
+
+
 
     private boolean sameSpecByPublicIds(OrderLineItem a, OrderLineItem b) {
         var aVar = a.getVariantSnapshot() != null ? a.getVariantSnapshot().getVariantPublicId() : null;
@@ -176,4 +243,6 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
                 && Objects.equals(aVar, bVar)
                 && aOpts.equals(bOpts);
     }
+
+
 }

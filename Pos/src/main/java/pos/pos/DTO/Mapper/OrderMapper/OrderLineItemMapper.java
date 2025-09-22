@@ -17,7 +17,7 @@ public class OrderLineItemMapper {
                 .order(order)
                 .quantity(qty)
                 .fulfillmentStatus(FulfillmentStatus.NEW)
-                .lineDiscount(0.0)
+                .lineDiscount(0.0) //?
                 .build();
     }
 
