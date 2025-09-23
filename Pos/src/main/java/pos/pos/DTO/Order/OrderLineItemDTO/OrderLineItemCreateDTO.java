@@ -16,6 +16,7 @@ public class OrderLineItemCreateDTO {
     @Max(500)
     private Integer quantity;
 
+    private String notes;
     private UUID variantPublicId;
     private List<UUID> optionPublicIds;
 }

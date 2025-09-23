@@ -13,5 +13,5 @@ public class OrderLineItemUpdateDTO {
     @Min(1)
     private Integer quantity;
 
-    private String itemName;
+    private String notes;
 }

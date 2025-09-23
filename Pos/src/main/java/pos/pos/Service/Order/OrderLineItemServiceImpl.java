@@ -18,6 +18,7 @@ import pos.pos.Repository.Order.OrderRepository;
 import pos.pos.Service.Interfecaes.Order.OrderEventService;
 import pos.pos.Service.Interfecaes.Order.OrderLineItemService;
 import pos.pos.Service.Interfecaes.Order.TotalsService;
+import pos.pos.Util.OrderFormater;
 
 import java.util.List;
 import java.util.Objects;
@@ -34,6 +35,8 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
     private final OrderSnapshotBuilder snapshotBuilder;
     private final OrderPricingService pricingService;
     private final TotalsService totalsService;
+    private final OrderFormater orderFormater;
+
 
     @Override
     public OrderLineItemResponseDTO addLineItem(Long orderId, OrderLineItemCreateDTO dto, String userEmail) {
@@ -44,11 +47,9 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
         ensureHasUnitPrice(incoming);
 
         OrderLineItem mergeTarget = findMergeTarget(order, incoming);
-
         if (mergeTarget != null) {
             return mergeIntoExisting(order, mergeTarget, incoming.getQuantity(), userEmail);
         }
-
         return addAsNewLine(order, incoming, userEmail);
     }
 
@@ -56,92 +57,112 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
     @Transactional
     public OrderLineItemResponseDTO updateLineItem(Long orderId, OrderLineItemUpdateDTO dto, String userEmail) {
         Order order = loadMutableOrderLocked(orderId);
-        OrderLineItem lineItem = lineItemRepository.findById(dto.getId())
-                .orElseThrow(() -> new OrderItemNotFound(orderId, dto.getId()));
-        if (!lineItem.getOrder().getId().equals(order.getId())) {
-            throw new LineItemOrderMismatchException(lineItem.getId(), order.getId());
+        OrderLineItem li = loadLineItemForOrder(orderId, dto.getId());
+
+        String sanitizedNotes = dto.getNotes() != null
+                ? orderFormater.sanitizeNotesOrderLine(dto.getNotes())
+                : li.getNotes();
+
+        boolean qtyChanged = !li.getQuantity().equals(dto.getQuantity());
+        boolean notesChanged = !Objects.equals(li.getNotes(), sanitizedNotes);
+
+        if (!qtyChanged && !notesChanged) {
+            return lineItemMapper.toOrderLineItemResponse(li);
         }
-        lineItem.setQuantity(dto.getQuantity());
-        if (dto.getItemName() != null && !dto.getItemName().isBlank()) {
-            lineItem.setItemName(dto.getItemName().trim());
+
+        li.setQuantity(dto.getQuantity());
+        if (dto.getNotes() != null) {
+            li.setNotes(sanitizedNotes);
         }
-        pricingService.priceLineItem(lineItem);
-        totalsService.recalculateTotals(order);
-        String metadata = "Updated item " + lineItem.getItemName() + " to quantity " + lineItem.getQuantity();
-        orderEventService.logEvent(order, OrderEventType.ITEM_UPDATED, userEmail, metadata);
-        return lineItemMapper.toOrderLineItemResponse(lineItem);
+
+        pricingService.priceLineItem(li);
+        OrderLineItem saved = lineItemRepository.save(li);
+
+        afterLineItemChange(
+                order,
+                OrderEventType.ITEM_UPDATED,
+                userEmail,
+                String.format("Updated %s to qty x%d", saved.getItemName(), saved.getQuantity())
+        );
+
+        return lineItemMapper.toOrderLineItemResponse(saved);
     }
 
     @Override
     public List<OrderLineItemResponseDTO> getLineItems(Long orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFound(orderId));
-        return order.getLineItems().stream().map(lineItemMapper::toOrderLineItemResponse).toList();
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFound(orderId));
+        return order.getLineItems().stream()
+                .map(lineItemMapper::toOrderLineItemResponse)
+                .toList();
+    }
+
+    @Override
+    public OrderLineItemResponseDTO getLineItemById(Long orderId, Long lineItemId) {
+        OrderLineItem li = loadLineItemForOrder(orderId, lineItemId);
+        return lineItemMapper.toOrderLineItemResponse(li);
     }
 
     @Override
     @Transactional
     public void deleteLineItem(Long orderId, Long lineItemId, String userEmail) {
         Order order = loadMutableOrderLocked(orderId);
-        OrderLineItem lineItem = lineItemRepository.findById(lineItemId)
-                .orElseThrow(() -> new OrderItemNotFound(orderId, lineItemId));
-        if (!lineItem.getOrder().getId().equals(orderId)) {
-            throw new LineItemOrderMismatchException(lineItem.getId(), orderId);
-        }
-        order.getLineItems().remove(lineItem);
-        totalsService.recalculateTotals(order);
-        String metadata = "Deleted item " + lineItem.getItemName() + " (id=" + lineItem.getId() + ")";
-        orderEventService.logEvent(order, OrderEventType.ITEM_DELETED, userEmail, metadata);
-    }
+        OrderLineItem li = loadLineItemForOrder(orderId, lineItemId);
 
-    @Override
-    public OrderLineItemResponseDTO getLineItemById(Long orderId, Long lineItemId) {
-        OrderLineItem lineItem = lineItemRepository.findById(lineItemId).orElseThrow(() -> new OrderItemNotFound(orderId, lineItemId));
-        if (!lineItem.getOrder().getId().equals(orderId)) {
-            throw new LineItemOrderMismatchException(lineItem.getId(), orderId);
-        }
-        return lineItemMapper.toOrderLineItemResponse(lineItem);
+        order.getLineItems().remove(li);
+
+        afterLineItemChange(
+                order,
+                OrderEventType.ITEM_DELETED,
+                userEmail,
+                String.format("Deleted item %s (id=%d)", li.getItemName(), li.getId())
+        );
     }
 
     @Override
     @Transactional
     public OrderLineItemResponseDTO updateFulfillmentStatus(Long orderId, Long lineItemId, FulfillmentStatus status, String userEmail) {
         Order order = loadMutableOrderLocked(orderId);
-        OrderLineItem li = lineItemRepository.findById(lineItemId)
-                .orElseThrow(() -> new OrderItemNotFound(orderId, lineItemId));
-        if (!li.getOrder().getId().equals(orderId)) {
-            throw new LineItemOrderMismatchException(li.getId(), orderId);
-        }
+        OrderLineItem li = loadLineItemForOrder(orderId, lineItemId);
+
         if (!isAllowedTransition(li.getFulfillmentStatus(), status)) {
             throw new InvalidOrderStateException("Illegal transition " + li.getFulfillmentStatus() + " -> " + status);
         }
+
         li.setFulfillmentStatus(status);
-        orderEventService.logEvent(order, OrderEventType.ITEM_UPDATED, userEmail,
-                "LineItem " + li.getId() + " status " + status);
-        return lineItemMapper.toOrderLineItemResponse(li);
+        OrderLineItem saved = lineItemRepository.save(li);
+
+        afterLineItemChange(
+                order,
+                OrderEventType.ITEM_UPDATED,
+                userEmail,
+                String.format("LineItem %d status %s", saved.getId(), status)
+        );
+
+        return lineItemMapper.toOrderLineItemResponse(saved);
     }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-    private static final String ERR_MISSING_UNIT_PRICE = "Missing unit price for item";
-
-    /** Ensures the line item has a concrete unit price, either from variant override or its own field. */
+    /**
+     * Ensures the line item has a concrete unit price, either from variant override or its own field.
+     */
     private void ensureHasUnitPrice(OrderLineItem li) {
         if (unitPrice(li) == null) {
-            throw new InvalidOrderStateException(ERR_MISSING_UNIT_PRICE);
+            throw new InvalidOrderStateException("Missing unit price for item");
         }
     }
 
-    /** Returns the effective unit price (variant override > item unit price) or null if not resolvable. */
+    /**
+     * Returns the effective unit price (variant override > item unit price) or null if not resolvable.
+     */
     private Double unitPrice(OrderLineItem li) {
         var vs = li.getVariantSnapshot();
         if (vs != null && vs.getPriceOverride() != null) return vs.getPriceOverride();
         return li.getUnitPrice();
     }
 
-    /** Unit price as a short string (e.g., "7.50"). */
+    /**
+     * Unit price as a short string (e.g., "7.50").
+     */
     private String unitPriceStr(OrderLineItem li) {
         Double p = unitPrice(li);
         return (p == null) ? "0.00" : String.format("%.2f", p);
@@ -158,7 +179,9 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
                 .orElse(null);
     }
 
-    /** Merges quantity into an existing line, re-prices, persists, updates totals, and logs. */
+    /**
+     * Merges quantity into an existing line, re-prices, persists, updates totals, and logs.
+     */
     private OrderLineItemResponseDTO mergeIntoExisting(
             Order order,
             OrderLineItem target,
@@ -166,21 +189,22 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
             String userEmail
     ) {
         target.setQuantity(target.getQuantity() + qtyToAdd);
-        pricingService.priceLineItem(target);        // also normalizes unitPrice
-        lineItemRepository.save(target);
-        totalsService.recalculateTotals(order);
+        pricingService.priceLineItem(target);
+        OrderLineItem saved = lineItemRepository.save(target);
 
-        orderEventService.logEvent(
+        afterLineItemChange(
                 order,
                 OrderEventType.ITEM_UPDATED,
                 userEmail,
-                String.format("Merged %s: new qty x%d", target.getItemName(), target.getQuantity())
+                String.format("Merged %s: new qty x%d", saved.getItemName(), saved.getQuantity())
         );
 
-        return lineItemMapper.toOrderLineItemResponse(target);
+        return lineItemMapper.toOrderLineItemResponse(saved);
     }
 
-    /** Adds a new line, prices it, persists, updates totals, and logs. */
+    /**
+     * Adds a new line, prices it, persists, updates totals, and logs.
+     */
     private OrderLineItemResponseDTO addAsNewLine(
             Order order,
             OrderLineItem li,
@@ -191,9 +215,8 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
 
         pricingService.priceLineItem(li);
         OrderLineItem saved = lineItemRepository.save(li);
-        totalsService.recalculateTotals(order);
 
-        orderEventService.logEvent(
+        afterLineItemChange(
                 order,
                 OrderEventType.ITEM_ADDED,
                 userEmail,
@@ -203,10 +226,23 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
         return lineItemMapper.toOrderLineItemResponse(saved);
     }
 
+    /**
+     * Recalculate totals and log in one place (consistent post-action).
+     */
+    private void afterLineItemChange(
+            Order order,
+            OrderEventType type,
+            String userEmail,
+            String meta
+    ) {
+        totalsService.recalculateTotals(order);
+        orderEventService.logEvent(order, type, userEmail, meta);
+    }
 
-
-    // This function takes an order id it checks if it exist if yes then check if you can edit it
-    // byschecking the status. If it is an invalid status like CLOSED or VOIDED then you can not edit it
+    /**
+     * Takes an order id, locks and validates it is editable.
+     * If status is CLOSED or VOIDED, edits are rejected.
+     */
     private @NotNull Order loadMutableOrderLocked(Long orderId) {
         var order = orderRepository.findForUpdate(orderId)
                 .orElseThrow(() -> new OrderNotFound(orderId));
@@ -214,7 +250,6 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
             throw new InvalidOrderStateException("Order not editable");
         return order;
     }
-
 
     private boolean isAllowedTransition(FulfillmentStatus from, FulfillmentStatus to) {
         if (from == null) return to == FulfillmentStatus.NEW || to == FulfillmentStatus.FIRED;
@@ -225,10 +260,6 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
             case SERVED, VOIDED -> false;
         };
     }
-
-
-
-
 
     private boolean sameSpecByPublicIds(OrderLineItem a, OrderLineItem b) {
         var aVar = a.getVariantSnapshot() != null ? a.getVariantSnapshot().getVariantPublicId() : null;
@@ -244,5 +275,16 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
                 && aOpts.equals(bOpts);
     }
 
+    /**
+     * Load a line item and ensure it belongs to the given order id.
+     */
+    private OrderLineItem loadLineItemForOrder(Long orderId, Long lineItemId) {
+        OrderLineItem li = lineItemRepository.findById(lineItemId)
+                .orElseThrow(() -> new OrderItemNotFound(orderId, lineItemId));
+        if (!li.getOrder().getId().equals(orderId)) {
+            throw new LineItemOrderMismatchException(li.getId(), orderId);
+        }
+        return li;
+    }
 
 }

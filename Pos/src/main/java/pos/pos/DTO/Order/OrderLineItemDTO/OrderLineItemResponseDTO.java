@@ -13,4 +13,5 @@ public class OrderLineItemResponseDTO {
     private Double lineSubtotal;
     private Double lineDiscount;
     private Double lineGrandTotal;
+    private String notes;
 }

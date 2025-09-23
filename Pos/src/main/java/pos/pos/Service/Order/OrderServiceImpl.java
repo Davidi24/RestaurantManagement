@@ -21,7 +21,7 @@ import pos.pos.Service.Interfecaes.Order.TotalsService;
 import pos.pos.Entity.KDS.KdsTicket;
 
 import pos.pos.Util.NotificationSender;
-import pos.pos.Util.OrderNumberFormatter;
+import pos.pos.Util.OrderFormater;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -39,7 +39,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderEventService orderEventService;
     private final TotalsService totalsService;
     private final OrderNumberService orderNumberService;
-    private final OrderNumberFormatter orderNumberFormatter;
+    private final OrderFormater orderNumberFormatter;
     private final NotificationSender notificationSender;
     private final KdsMapper kdsMapper;
 
@@ -71,7 +71,7 @@ public class OrderServiceImpl implements OrderService {
 
         var today = LocalDate.now();
         long seq = orderNumberService.nextFor(today, tableId);
-        String orderNumber = orderNumberFormatter.format(tableId, today, seq);
+        String orderNumber = orderNumberFormatter.formatOrderNumber(tableId, today, seq);
         order.setOrderNumber(orderNumber);
 
         order = orderRepository.save(order);

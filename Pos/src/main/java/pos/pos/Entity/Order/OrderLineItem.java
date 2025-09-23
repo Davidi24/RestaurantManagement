@@ -2,11 +2,15 @@ package pos.pos.Entity.Order;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.util.*;
 
 @Entity
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class OrderLineItem {
 
     @Id
@@ -26,6 +30,7 @@ public class OrderLineItem {
     private Double lineDiscount;   // total discount amount applied to this line
     private Double lineGrandTotal; // final amount to pay for this line: lineSubtotal - lineDiscount
 
+    private String notes;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
