@@ -1,6 +1,7 @@
 package pos.pos.Service.Order;
 
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pos.pos.DTO.Mapper.KDS.KdsMapper;
@@ -9,6 +10,7 @@ import pos.pos.DTO.Order.OrderCollectorDTO.OrderCreateDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderResponseDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderStatusUpdateDTO;
 import pos.pos.DTO.Order.OrderCollectorDTO.OrderUpdateDTO;
+import pos.pos.Entity.KDS.KdsTicket;
 import pos.pos.Entity.Order.*;
 import pos.pos.Entity.User.UserRole;
 import pos.pos.Exeption.InvalidOrderStateException;
@@ -18,8 +20,6 @@ import pos.pos.Repository.Order.OrderRepository;
 import pos.pos.Service.Interfecaes.Order.OrderEventService;
 import pos.pos.Service.Interfecaes.Order.OrderService;
 import pos.pos.Service.Interfecaes.Order.TotalsService;
-import pos.pos.Entity.KDS.KdsTicket;
-
 import pos.pos.Util.NotificationSender;
 import pos.pos.Util.OrderFormater;
 
@@ -43,9 +43,8 @@ public class OrderServiceImpl implements OrderService {
     private final NotificationSender notificationSender;
     private final KdsMapper kdsMapper;
 
-
     private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED = Map.of(
-            OrderStatus.OPEN, Set.of(OrderStatus.ON_HOLD, OrderStatus.SENT_TO_KITCHEN, OrderStatus.VOIDED, OrderStatus.CLOSED, OrderStatus.PARTIALLY_PAID, OrderStatus.PAID),
+            OrderStatus.OPEN, Set.of(OrderStatus.ON_HOLD, OrderStatus.SENT_TO_KITCHEN, OrderStatus.PARTIALLY_PAID, OrderStatus.PAID, OrderStatus.VOIDED, OrderStatus.CLOSED),
             OrderStatus.ON_HOLD, Set.of(OrderStatus.OPEN, OrderStatus.SENT_TO_KITCHEN, OrderStatus.VOIDED),
             OrderStatus.SENT_TO_KITCHEN, Set.of(OrderStatus.READY, OrderStatus.VOIDED),
             OrderStatus.READY, Set.of(OrderStatus.OPEN, OrderStatus.PARTIALLY_PAID, OrderStatus.PAID, OrderStatus.VOIDED, OrderStatus.CLOSED),
@@ -57,7 +56,6 @@ public class OrderServiceImpl implements OrderService {
 
 
     @Override
-    @Transactional
     public OrderResponseDTO createOrder(OrderCreateDTO dto, String userEmail) {
         Long tableId = dto.getTableId();
 
@@ -66,86 +64,115 @@ public class OrderServiceImpl implements OrderService {
                     throw new OpenOrderExistsException(tableId, existing.getId(), existing.getOrderNumber());
                 });
 
-        var order = orderMapper.toOrder(dto);
+        Order order = orderMapper.toOrder(dto);
         order.setUserEmail(userEmail);
 
         var today = LocalDate.now();
         long seq = orderNumberService.nextFor(today, tableId);
-        String orderNumber = orderNumberFormatter.formatOrderNumber(tableId, today, seq);
-        order.setOrderNumber(orderNumber);
+        order.setOrderNumber(orderNumberFormatter.formatOrderNumber(tableId, today, seq));
 
-        order = orderRepository.save(order);
-        orderEventService.logEvent(order, OrderEventType.CREATED, userEmail, "Order created");
+        Order saved = orderRepository.save(order);
 
-        var orderResponse = orderMapper.toOrderResponse(order);
+        afterOrderChange(saved, OrderEventType.CREATED, userEmail, "Order created");
+
+        OrderResponseDTO response = orderMapper.toOrderResponse(saved);
         notificationSender.sendMessage(
                 OrderEventType.CREATED.name(),
-                orderResponse,
+                response,
                 UserRole.SUPERADMIN.name(),
                 UserRole.KITCHEN.name(),
                 UserRole.ADMIN.name()
-                );
+        );
 
-        return orderResponse;
+        return response;
     }
 
     @Override
-    @Transactional
     public OrderResponseDTO updateOrder(Long orderId, OrderUpdateDTO dto) {
-        var order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFound(orderId));
-
-        if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.VOIDED)
-            throw new InvalidOrderStateException("Cannot update a closed or voided order");
+        Order order = loadMutableOrderLocked(orderId);
 
         if (dto.getNotes() != null) order.setNotes(dto.getNotes());
-
         if (dto.getNumberOfGuests() != null && dto.getNumberOfGuests() >= 0)
             order.setNumberOfGuests(dto.getNumberOfGuests());
 
         if (dto.getTableId() != null && !dto.getTableId().equals(order.getTableId())) {
             orderRepository.findFirstByTableIdAndStatus(dto.getTableId(), OrderStatus.OPEN)
-                    .ifPresent(existing -> { if (!existing.getId().equals(order.getId()))
-                        throw new OpenOrderExistsException(dto.getTableId(), existing.getId(), existing.getOrderNumber());
+                    .ifPresent(existing -> {
+                        if (!existing.getId().equals(order.getId())) {
+                            throw new OpenOrderExistsException(dto.getTableId(), existing.getId(), existing.getOrderNumber());
+                        }
                     });
             order.setTableId(dto.getTableId());
         }
-        return orderMapper.toOrderResponse(orderRepository.save(order));
+
+        Order saved = orderRepository.save(order);
+        return orderMapper.toOrderResponse(saved);
     }
 
     @Override
     public OrderResponseDTO getOrderById(Long id) {
-        var order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFound(id));
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new OrderNotFound(id));
         return orderMapper.toOrderResponse(order);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrderResponseDTO> getAllOrders() {
-        return orderRepository.findAll().stream().map(orderMapper::toOrderResponse).toList();
+        return orderRepository.findAll().stream()
+                .map(orderMapper::toOrderResponse)
+                .toList();
     }
 
     @Override
     public void deleteOrder(Long id) {
-        if (!orderRepository.existsById(id)) {
-            throw new OrderNotFound(id);
-        }
+        if (!orderRepository.existsById(id)) throw new OrderNotFound(id);
         orderRepository.deleteById(id);
     }
 
-    @Transactional
-    public OrderResponseDTO updateStatus(Long id, OrderStatusUpdateDTO dto, String userEmail) {
-        var order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFound(id));
-        applyStatusTransition(order, dto.getStatus(), userEmail); // reason = null
-        return orderMapper.toOrderResponse(orderRepository.save(order));
+    @Override
+    public OrderResponseDTO serveAllItems(Long orderId, String userEmail) {
+        Order order = loadMutableOrderLocked(orderId);
+
+        order.getLineItems().forEach(li -> li.setFulfillmentStatus(FulfillmentStatus.SERVED));
+        Order saved = orderRepository.save(order);
+
+        afterOrderChange(saved, OrderEventType.ITEM_UPDATED, userEmail, "All items served");
+        return orderMapper.toOrderResponse(saved);
+    }
+
+    @Override
+    public OrderResponseDTO serveOneItem(Long orderId, Long lineItemId, String userEmail) {
+        Order order = loadMutableOrderLocked(orderId);
+
+        OrderLineItem li = order.getLineItems().stream()
+                .filter(x -> x.getId().equals(lineItemId))
+                .findFirst()
+                .orElseThrow(() -> new InvalidOrderStateException("Line item not found in order " + orderId));
+
+        if (li.getFulfillmentStatus() == FulfillmentStatus.SERVED) {
+            throw new InvalidOrderStateException("Line item already served");
+        }
+
+        li.setFulfillmentStatus(FulfillmentStatus.SERVED);
+        Order saved = orderRepository.save(order);
+
+        afterOrderChange(saved, OrderEventType.ITEM_UPDATED, userEmail, "Item " + lineItemId + " served");
+        return orderMapper.toOrderResponse(saved);
+    }
+
+    @Override
+    public OrderResponseDTO updateStatus(Long orderId, OrderStatusUpdateDTO dto, String userEmail) {
+        Order order = loadForUpdate(orderId);
+        applyStatusTransition(order, dto.getStatus(), userEmail);
+        Order saved = orderRepository.save(order);
+        return orderMapper.toOrderResponse(saved);
     }
 
     private void applyStatusTransition(Order order, OrderStatus target, String userEmail) {
-        if (target == null) {
-            throw new InvalidOrderStateException("Target status is required");
-        }
+        if (target == null) throw new InvalidOrderStateException("Target status is required");
 
-        var from = order.getStatus();
-
+        OrderStatus from = order.getStatus();
         if (!ALLOWED.getOrDefault(from, Set.of()).contains(target)) {
             throw new InvalidOrderStateException("Illegal status transition: " + from + " → " + target);
         }
@@ -158,14 +185,14 @@ public class OrderServiceImpl implements OrderService {
             if (!allDone) throw new InvalidOrderStateException("Items not served/voided");
             order.setClosedAt(LocalDateTime.now());
             order.setStatus(OrderStatus.CLOSED);
-            orderEventService.logEvent(order, OrderEventType.CLOSED, userEmail, "Order closed");
+            afterOrderChange(order, OrderEventType.CLOSED, userEmail, "Order closed");
             return;
         }
 
         if (target == OrderStatus.VOIDED) {
             order.setClosedAt(LocalDateTime.now());
             order.setStatus(OrderStatus.VOIDED);
-            orderEventService.logEvent(order, OrderEventType.VOIDED, userEmail, "Order voided");
+            afterOrderChange(order, OrderEventType.VOIDED, userEmail, "Order voided");
             return;
         }
 
@@ -173,56 +200,27 @@ public class OrderServiceImpl implements OrderService {
         if (target == OrderStatus.OPEN) order.setClosedAt(null);
 
         if (target == OrderStatus.SENT_TO_KITCHEN) {
-            KdsTicket kdsTicket = kdsMapper.toKdsTicket(order); // build KdsTicket DTO
-            notificationSender.sendMessage(
-                    "KDS_TICKET_CREATED",
-                    kdsTicket,
-                    UserRole.KITCHEN.name()
-            );
+            KdsTicket kdsTicket = kdsMapper.toKdsTicket(order);
+            notificationSender.sendMessage("KDS_TICKET_CREATED", kdsTicket, UserRole.KITCHEN.name());
         }
 
-        orderEventService.logEvent(order, OrderEventType.STATUS_CHANGED, userEmail, "Status: " + from + " → " + target);
+        afterOrderChange(order, OrderEventType.STATUS_CHANGED, userEmail, "Status: " + from + " → " + target);
     }
 
-    @Override
-    public OrderResponseDTO serveAllItems(Long orderId, String userEmail) {
-        var order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFound(orderId));
-
-        order.getLineItems().forEach(li -> {
-            li.setFulfillmentStatus(FulfillmentStatus.SERVED);
-        });
-
-        orderRepository.save(order);
-        orderEventService.logEvent(order, OrderEventType.ITEM_UPDATED, userEmail, "All items served");
-
-        return orderMapper.toOrderResponse(order);
+    private void afterOrderChange(Order order, OrderEventType type, String userEmail, String meta) {
+        orderEventService.logEvent(order, type, userEmail, meta);
     }
 
-    @Override
-    public OrderResponseDTO serveOneItem(Long orderId, Long lineItemId, String userEmail) {
-        var order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFound(orderId));
-
-        var lineItem = order.getLineItems().stream()
-                .filter(li -> li.getId().equals(lineItemId))
-                .findFirst()
-                .orElseThrow(() -> new InvalidOrderStateException("Line item not found in order " + orderId));
-
-        if (lineItem.getFulfillmentStatus() == FulfillmentStatus.SERVED) {
-            throw new InvalidOrderStateException("Line item is already served");
-        }
+    private @NotNull Order loadMutableOrderLocked(Long orderId) {
+        Order order = loadForUpdate(orderId);
         if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.VOIDED) {
-            throw new InvalidOrderStateException("Cannot serve items on a closed or voided order");
+            throw new InvalidOrderStateException("Order not editable");
         }
-
-        lineItem.setFulfillmentStatus(FulfillmentStatus.SERVED);
-
-        orderRepository.save(order);
-
-        orderEventService.logEvent(order, OrderEventType.ITEM_UPDATED, userEmail,
-                "Item " + lineItemId + " served");
-
-        return orderMapper.toOrderResponse(order);
+        return order;
     }
 
+    private @NotNull Order loadForUpdate(Long orderId) {
+        return orderRepository.findForUpdate(orderId)
+                .orElseThrow(() -> new OrderNotFound(orderId));
+    }
 }

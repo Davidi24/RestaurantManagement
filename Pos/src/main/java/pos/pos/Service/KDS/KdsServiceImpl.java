@@ -1,10 +1,10 @@
 package pos.pos.Service.KDS;
 
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pos.pos.DTO.Mapper.KDS.KdsMapper;
-import pos.pos.Entity.KDS.KdsTicket;
 import pos.pos.Entity.Order.*;
 import pos.pos.Entity.User.UserRole;
 import pos.pos.Exeption.InvalidOrderStateException;
@@ -28,50 +28,88 @@ public class KdsServiceImpl implements KdsService {
     private final KdsMapper kdsMapper;
 
     @Override
-    public void updateItemStatus(Long orderId, Long lineItemId, FulfillmentStatus status, String userEmail) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFound(orderId));
+    public void updateItemStatus(Long orderId, Long lineItemId, FulfillmentStatus to, String userEmail) {
+        Order order = loadMutableOrderLocked(orderId);
+
         OrderLineItem item = lineItemRepository.findById(lineItemId)
                 .orElseThrow(() -> new OrderItemNotFound(orderId, lineItemId));
         if (!item.getOrder().getId().equals(orderId)) {
             throw new InvalidOrderStateException("Item does not belong to this order");
         }
-        item.setFulfillmentStatus(status);
+
+        FulfillmentStatus from = item.getFulfillmentStatus();
+        if (!FulfillmentStatus.isValidTransition(from, to)) {
+            throw new InvalidOrderStateException("Illegal transition " + from + " -> " + to);
+        }
+
+        item.setFulfillmentStatus(to);
+        lineItemRepository.save(item);
+
         orderEventService.logEvent(order, OrderEventType.ITEM_UPDATED, userEmail,
-                "Item " + item.getItemName() + " -> " + status);
-        KdsTicket ticket = kdsMapper.toKdsTicket(order);
-        notificationSender.sendMessage("KDS_ITEM_UPDATED", ticket, UserRole.KITCHEN.name());
+                "Item " + item.getItemName() + " -> " + to);
+
+        boolean allReady = order.getLineItems().stream().allMatch(li ->
+                li.getFulfillmentStatus() == FulfillmentStatus.READY
+                        || li.getFulfillmentStatus() == FulfillmentStatus.SERVED
+                        || li.getFulfillmentStatus() == FulfillmentStatus.VOIDED);
+
+        if (allReady && order.getStatus() == OrderStatus.SENT_TO_KITCHEN) {
+            order.setStatus(OrderStatus.READY);
+            orderRepository.save(order);
+            orderEventService.logEvent(order, OrderEventType.STATUS_CHANGED, userEmail, "Ticket auto-marked READY");
+            sendKds("KDS_TICKET_READY", kdsMapper.toKdsTicket(order));
+        } else {
+            sendKds("KDS_ITEM_UPDATED", kdsMapper.toKdsTicket(order));
+        }
     }
 
     @Override
     public void markTicketReady(Long orderId, String userEmail) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFound(orderId));
-        boolean allReady = order.getLineItems().stream()
-                .allMatch(li -> li.getFulfillmentStatus() == FulfillmentStatus.READY);
-        if (!allReady) {
-            throw new InvalidOrderStateException("Not all items are ready");
-        }
+        Order order = loadMutableOrderLocked(orderId);
+
+        boolean allReady = order.getLineItems().stream().allMatch(li ->
+                li.getFulfillmentStatus() == FulfillmentStatus.READY
+                        || li.getFulfillmentStatus() == FulfillmentStatus.SERVED
+                        || li.getFulfillmentStatus() == FulfillmentStatus.VOIDED);
+
+        if (!allReady) throw new InvalidOrderStateException("Not all items are READY/SERVED/VOIDED");
+
         order.setStatus(OrderStatus.READY);
+        orderRepository.save(order);
+
         orderEventService.logEvent(order, OrderEventType.STATUS_CHANGED, userEmail, "Ticket marked READY");
-        KdsTicket ticket = kdsMapper.toKdsTicket(order);
-        notificationSender.sendMessage("KDS_TICKET_READY", ticket, UserRole.KITCHEN.name());
+        sendKds("KDS_TICKET_READY", kdsMapper.toKdsTicket(order));
     }
 
     @Override
     public void bumpTicket(Long orderId, String userEmail) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFound(orderId));
+        Order order = loadForUpdate(orderId);
         orderEventService.logEvent(order, OrderEventType.ITEM_REMOVED, userEmail, "Ticket bumped");
-        notificationSender.sendMessage("KDS_TICKET_BUMPED", orderId, UserRole.KITCHEN.name());
+        sendKds("KDS_TICKET_BUMPED", orderId);
     }
 
     @Override
     public void recallTicket(Long orderId, String userEmail) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFound(orderId));
+        Order order = loadForUpdate(orderId);
         orderEventService.logEvent(order, OrderEventType.ITEM_ADDED, userEmail, "Ticket recalled");
-        KdsTicket ticket = kdsMapper.toKdsTicket(order);
-        notificationSender.sendMessage("KDS_TICKET_RECALLED", ticket, UserRole.KITCHEN.name());
+        sendKds("KDS_TICKET_RECALLED", kdsMapper.toKdsTicket(order));
+    }
+
+
+    private @NotNull Order loadMutableOrderLocked(Long orderId) {
+        Order o = loadForUpdate(orderId);
+        if (o.getStatus() == OrderStatus.CLOSED || o.getStatus() == OrderStatus.VOIDED) {
+            throw new InvalidOrderStateException("Order not editable");
+        }
+        return o;
+    }
+
+    private @NotNull Order loadForUpdate(Long orderId) {
+        return orderRepository.findForUpdate(orderId)
+                .orElseThrow(() -> new OrderNotFound(orderId));
+    }
+
+    private void sendKds(String topic, Object payload) {
+        notificationSender.sendMessage(topic, payload, UserRole.KITCHEN.name());
     }
 }

@@ -37,7 +37,6 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
     private final TotalsService totalsService;
     private final OrderFormater orderFormater;
 
-
     @Override
     public OrderLineItemResponseDTO addLineItem(Long orderId, OrderLineItemCreateDTO dto, String userEmail) {
         Order order = loadMutableOrderLocked(orderId);
@@ -125,8 +124,12 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
         Order order = loadMutableOrderLocked(orderId);
         OrderLineItem li = loadLineItemForOrder(orderId, lineItemId);
 
-        if (!isAllowedTransition(li.getFulfillmentStatus(), status)) {
-            throw new InvalidOrderStateException("Illegal transition " + li.getFulfillmentStatus() + " -> " + status);
+        FulfillmentStatus from = li.getFulfillmentStatus();
+        if (from != null && from.canTransitionTo(status)) {
+            throw new InvalidOrderStateException("Illegal transition " + from + " -> " + status);
+        }
+        if (from == null && !(status == FulfillmentStatus.NEW || status == FulfillmentStatus.FIRED)) {
+            throw new InvalidOrderStateException("Illegal transition null -> " + status);
         }
 
         li.setFulfillmentStatus(status);
@@ -251,16 +254,6 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
         return order;
     }
 
-    private boolean isAllowedTransition(FulfillmentStatus from, FulfillmentStatus to) {
-        if (from == null) return to == FulfillmentStatus.NEW || to == FulfillmentStatus.FIRED;
-        return switch (from) {
-            case NEW -> to == FulfillmentStatus.FIRED || to == FulfillmentStatus.VOIDED;
-            case FIRED -> to == FulfillmentStatus.READY || to == FulfillmentStatus.VOIDED;
-            case READY -> to == FulfillmentStatus.SERVED || to == FulfillmentStatus.VOIDED;
-            case SERVED, VOIDED -> false;
-        };
-    }
-
     private boolean sameSpecByPublicIds(OrderLineItem a, OrderLineItem b) {
         var aVar = a.getVariantSnapshot() != null ? a.getVariantSnapshot().getVariantPublicId() : null;
         var bVar = b.getVariantSnapshot() != null ? b.getVariantSnapshot().getVariantPublicId() : null;
@@ -286,5 +279,4 @@ public class OrderLineItemServiceImpl implements OrderLineItemService {
         }
         return li;
     }
-
 }
