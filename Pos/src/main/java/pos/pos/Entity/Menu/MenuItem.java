@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.util.*;
+import pos.pos.Entity.Recipe.Recipe;
 
 @Entity
 @Getter @Setter
@@ -49,6 +50,10 @@ public class MenuItem {
     @OrderBy("sortOrder ASC, id ASC")
     @Builder.Default
     private Set<OptionGroup> optionGroups = new LinkedHashSet<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recipe_id", foreignKey = @ForeignKey(name = "fk_menuitem_recipe"))
+    private Recipe recipe;
 
     @PrePersist
     private void ensurePublicId() {

@@ -46,4 +46,9 @@ public class OrderLineItem {
     @OneToMany(mappedBy = "lineItem", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderDiscount> discounts = new ArrayList<>();
+
+    @OneToMany(mappedBy = "lineItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id ASC")
+    @Builder.Default
+    private List<OrderIngredientSnapshot> ingredientSnapshots = new ArrayList<>();
 }
