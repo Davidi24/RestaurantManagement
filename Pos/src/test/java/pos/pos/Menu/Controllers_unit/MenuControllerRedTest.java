@@ -12,7 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import pos.pos.Controller.Menu.MenuController;
 import pos.pos.DTO.Menu.MenuDTO.MenuRequest;
 import pos.pos.DTO.Menu.MenuDTO.MenuResponse;
-import pos.pos.Exeption.AlreadyExistsException;
+import pos.pos.Exeption.General.AlreadyExistsException;
 import pos.pos.Exeption.MenuNotFoundException;
 import pos.pos.Service.Interfecaes.Menu.MenuService;
 import pos.pos.Config.Security.RevokedTokenFilter;

@@ -8,7 +8,7 @@ import pos.pos.DTO.Mapper.UserMapper;
 import pos.pos.DTO.User.RegisterRequest;
 import pos.pos.DTO.User.UserResponse;
 import pos.pos.Entity.User.User;
-import pos.pos.Exeption.AlreadyExistsException;
+import pos.pos.Exeption.General.AlreadyExistsException;
 import pos.pos.Repository.UserRepository;
 import pos.pos.Service.Interfecaes.User.UserService;
 

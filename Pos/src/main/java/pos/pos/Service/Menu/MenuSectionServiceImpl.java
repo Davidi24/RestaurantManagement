@@ -11,7 +11,7 @@ import pos.pos.DTO.Menu.MenuSectionDTO.MenuSectionResponse;
 import pos.pos.DTO.Menu.MenuSectionDTO.MenuSectionUpdateRequest;
 import pos.pos.Entity.Menu.Menu;
 import pos.pos.Entity.Menu.MenuSection;
-import pos.pos.Exeption.AlreadyExistsException;
+import pos.pos.Exeption.General.AlreadyExistsException;
 import pos.pos.Exeption.MenuNotFoundException;
 import pos.pos.Exeption.MenuSectionNotFound;
 import pos.pos.Repository.Menu.MenuRepository;

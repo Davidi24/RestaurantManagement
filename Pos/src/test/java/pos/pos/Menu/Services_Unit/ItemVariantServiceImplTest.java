@@ -13,7 +13,7 @@ import pos.pos.Entity.Menu.ItemVariant;
 import pos.pos.Entity.Menu.Menu;
 import pos.pos.Entity.Menu.MenuItem;
 import pos.pos.Entity.Menu.MenuSection;
-import pos.pos.Exeption.AlreadyExistsException;
+import pos.pos.Exeption.General.AlreadyExistsException;
 import pos.pos.Exeption.ItemVariantNotFound;
 import pos.pos.Exeption.MenuItemException;
 import pos.pos.Exeption.MenuSectionNotFound;

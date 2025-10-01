@@ -17,20 +17,32 @@ import java.time.OffsetDateTime;
   indexes = @Index(name = "ix_ingredient_name", columnList = "name"))
 @SequenceGenerator(name="ingredient_seq", sequenceName="ingredient_seq", allocationSize=50)
 public class Ingredient {
-  public enum UnitOfMeasure { G, KG, ML, L, PCS }
 
-  @Id @GeneratedValue(strategy=GenerationType.SEQUENCE, generator="ingredient_seq")
+
+  @Id
+  @GeneratedValue(strategy=GenerationType.SEQUENCE, generator="ingredient_seq")
   private Long id;
 
-  @Column(nullable=false, length=128) private String name;
-  @Enumerated(EnumType.STRING) @Column(nullable=false, length=16) private UnitOfMeasure stockUnit;
-  @Column(precision=19, scale=6) private BigDecimal costPerStockUnit;
-  @Column(length=256) private String allergenInfo;
+  @Column(nullable=false, length=128)
+  private String name;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable=false, length=16)
+  private UnitOfMeasure stockUnit;
+
+  @Column(precision=19, scale=6)
+  private BigDecimal costPerStockUnit;
+
+  @Column(length=256)
+  private String allergenInfo;
 
   @Version private long version;
-  @CreationTimestamp @Column(nullable=false, updatable=false) private OffsetDateTime createdAt;
-  @UpdateTimestamp @Column(nullable=false) private OffsetDateTime updatedAt;
+  @CreationTimestamp @Column(nullable=false, updatable=false)
+  private OffsetDateTime createdAt;
+
+  @UpdateTimestamp
+  @Column(nullable=false) private OffsetDateTime updatedAt;
 
   @OneToOne(mappedBy="ingredient", fetch=FetchType.LAZY)
-  private InventoryItem inventoryItem; // optional link
+  private InventoryItem inventoryItem;
 }

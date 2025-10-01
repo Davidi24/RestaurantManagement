@@ -7,7 +7,7 @@ import pos.pos.DTO.Mapper.MenuMapper.MenuMapper;
 import pos.pos.DTO.Menu.MenuDTO.MenuRequest;
 import pos.pos.DTO.Menu.MenuDTO.MenuResponse;
 import pos.pos.DTO.Menu.MenuDTO.MenuTreeResponse;
-import pos.pos.Exeption.AlreadyExistsException;
+import pos.pos.Exeption.General.AlreadyExistsException;
 import pos.pos.Exeption.MenuNotFoundException;
 import pos.pos.Repository.Menu.MenuRepository;
 import pos.pos.Service.Interfecaes.Menu.MenuService;

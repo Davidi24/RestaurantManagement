@@ -9,7 +9,7 @@ import pos.pos.DTO.Menu.MenuItemDTO.MenuItemResponse;
 import pos.pos.DTO.Menu.MenuItemDTO.MenuItemUpdateRequest;
 import pos.pos.Entity.Menu.MenuItem;
 import pos.pos.Entity.Menu.MenuSection;
-import pos.pos.Exeption.AlreadyExistsException;
+import pos.pos.Exeption.General.AlreadyExistsException;
 import pos.pos.Exeption.MenuItemException;
 import pos.pos.Exeption.MenuSectionNotFound;
 import pos.pos.Repository.Menu.MenuItemRepository;

@@ -10,7 +10,7 @@ import pos.pos.DTO.Menu.OptionDTO.OptionGroupUpdateRequest;
 import pos.pos.Entity.Menu.MenuItem;
 import pos.pos.Entity.Menu.MenuSection;
 import pos.pos.Entity.Menu.OptionGroup;
-import pos.pos.Exeption.AlreadyExistsException;
+import pos.pos.Exeption.General.AlreadyExistsException;
 import pos.pos.Exeption.MenuItemException;
 import pos.pos.Exeption.MenuSectionNotFound;
 import pos.pos.Exeption.OptionGroupNotFoundException;

@@ -9,7 +9,7 @@ import pos.pos.DTO.Menu.VariantDTO.ItemVariantResponse;
 import pos.pos.DTO.Menu.VariantDTO.ItemVariantUpdateRequest;
 import pos.pos.Entity.Menu.ItemVariant;
 import pos.pos.Entity.Menu.MenuItem;
-import pos.pos.Exeption.AlreadyExistsException;
+import pos.pos.Exeption.General.AlreadyExistsException;
 import pos.pos.Exeption.ItemVariantNotFound;
 import pos.pos.Exeption.MenuItemException;
 import pos.pos.Exeption.MenuSectionNotFound;

@@ -16,6 +16,7 @@ import java.math.BigDecimal;
   })
 @SequenceGenerator(name="recipe_ingredient_seq", sequenceName="recipe_ingredient_seq", allocationSize=50)
 public class RecipeIngredient {
+
   @Id @GeneratedValue(strategy=GenerationType.SEQUENCE, generator="recipe_ingredient_seq")
   private Long id;
 
@@ -27,7 +28,14 @@ public class RecipeIngredient {
   @JoinColumn(name="ingredient_id", nullable=false, foreignKey=@ForeignKey(name="fk_recipeingredient_ingredient"))
   private Ingredient ingredient;
 
-  @Column(nullable=false, precision=19, scale=6) private BigDecimal quantity;
-  @Enumerated(EnumType.STRING) @Column(nullable=false, length=16) private Ingredient.UnitOfMeasure unit;
-  @Column(length=256) private String notes;
+  @Column(nullable=false, precision=19, scale=6)
+  private BigDecimal quantity;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable=false, length=16)
+  private UnitOfMeasure unit;
+
+  @Column(length=256)
+  private String notes;
+
 }
