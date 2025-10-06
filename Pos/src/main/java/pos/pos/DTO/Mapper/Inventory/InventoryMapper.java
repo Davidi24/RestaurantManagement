@@ -8,9 +8,13 @@ import pos.pos.Entity.Inventory.InventoryItem;
 @Component
 @RequiredArgsConstructor
 public class InventoryMapper {
+
     public InventoryItem toInventoryItem(InventoryItemCreateRequest inventoryItemCreateRequest) {
         return InventoryItem.builder()
-
+                .quantityOnHand(inventoryItemCreateRequest.initialQty())
+                .reorderLevel(inventoryItemCreateRequest.reorderLevel())
                 .build();
     }
+
+
 }

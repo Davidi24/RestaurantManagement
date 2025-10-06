@@ -29,4 +29,12 @@ public final class ApiPaths {
     public static final class Kds {
         public static final String BASE = V1 + "/kds";
     }
+
+    public static final class Inventory {
+        public static final String BASE = V1 + "/inventory";
+    }
+
+    public static final class Ingredient {
+        public static final String BASE = V1 + "/ingredient";
+    }
 }

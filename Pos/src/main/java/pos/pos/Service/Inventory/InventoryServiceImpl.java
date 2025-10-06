@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pos.pos.DTO.Inventory.InventoryItemCreateRequest;
+import pos.pos.DTO.Mapper.Inventory.InventoryMapper;
 import pos.pos.Entity.Inventory.InventoryItem;
 import pos.pos.Entity.Recipe.Ingredient;
 import pos.pos.Exeption.General.NotFoundException;
@@ -21,6 +22,7 @@ import java.util.Optional;
 public class InventoryServiceImpl implements InventoryService {
     private final InventoryItemRepository inventoryRepo;
     private final IngredientRepository ingredientRepo;
+    private final InventoryMapper inventoryMapper;
 
     @Override
     public InventoryItem createForIngredient(Long ingredientId) {
@@ -42,10 +44,8 @@ public class InventoryServiceImpl implements InventoryService {
                 () -> new NotFoundException("Ingredient", inventoryItemCreateRequest.ingredientId())
         );
 
-        InventoryItem inventoryItem = new InventoryItem();
+        InventoryItem inventoryItem = inventoryMapper.toInventoryItem(inventoryItemCreateRequest);
         inventoryItem.setIngredient(ingredient);
-        inventoryItem.setQuantityOnHand(inventoryItemCreateRequest.initialQty());
-        inventoryItem.setReorderLevel(inventoryItemCreateRequest.reorderLevel());
 
         return inventoryRepo.save(inventoryItem);
     }
