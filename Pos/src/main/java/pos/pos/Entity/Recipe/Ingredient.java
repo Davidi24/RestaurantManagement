@@ -12,6 +12,7 @@ import java.time.OffsetDateTime;
 @Getter @Setter @Builder
 @NoArgsConstructor @AllArgsConstructor
 @Entity
+@ToString
 @Table(name = "ingredient",
   uniqueConstraints = @UniqueConstraint(name = "uk_ingredient_name", columnNames = "name"),
   indexes = @Index(name = "ix_ingredient_name", columnList = "name"))
@@ -41,7 +42,8 @@ public class Ingredient {
   private OffsetDateTime createdAt;
 
   @UpdateTimestamp
-  @Column(nullable=false) private OffsetDateTime updatedAt;
+  @Column(nullable=false)
+  private OffsetDateTime updatedAt;
 
   @OneToOne(mappedBy="ingredient", fetch=FetchType.LAZY)
   private InventoryItem inventoryItem;
