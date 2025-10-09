@@ -1,19 +1,22 @@
 package pos.pos.Service.Interfecaes.Inventory;
 
-import pos.pos.DTO.Inventory.InventoryItemCreateRequest;
-import pos.pos.Entity.Inventory.InventoryItem;
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
+import org.apache.coyote.BadRequestException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import pos.pos.DTO.Inventory.InventoryItemRequest;
+import pos.pos.DTO.Inventory.InventoryItemResponse;
+import pos.pos.DTO.Inventory.MovementRequest;
+import pos.pos.DTO.Inventory.MovementResponse;
+
+import java.time.OffsetDateTime;
 
 public interface InventoryService {
-    InventoryItem createForIngredient(Long ingredientId);
-    InventoryItem createForIngredient(InventoryItemCreateRequest inventoryItemCreateRequest);
-    Optional<InventoryItem> findById(Long id);
-    Optional<InventoryItem> findByIngredientId(Long ingredientId);
-    List<InventoryItem> listAll();
-    InventoryItem adjustQuantity(Long inventoryItemId, BigDecimal delta);
-    InventoryItem setQuantity(Long inventoryItemId, BigDecimal quantity);
-    List<InventoryItem> findBelowReorder();
-    void delete(Long id);
+    InventoryItemResponse createItem(InventoryItemRequest request);
+    InventoryItemResponse updateItem(Long id, InventoryItemRequest request);
+    void deleteItem(Long id);
+    InventoryItemResponse getItem(Long id);
+    Page<InventoryItemResponse> listItems(String q, Pageable pageable);
+
+    MovementResponse move(Long itemId, MovementRequest request, String createdBy) throws BadRequestException;
+    Page<MovementResponse> listMovements(Long itemId, OffsetDateTime from, OffsetDateTime to, Pageable pageable);
 }

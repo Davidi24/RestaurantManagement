@@ -12,25 +12,37 @@ import java.time.OffsetDateTime;
 @Getter @Setter @Builder
 @NoArgsConstructor @AllArgsConstructor
 @Entity
-@Table(name="inventory_item",
-  uniqueConstraints=@UniqueConstraint(name="uk_inventory_ingredient", columnNames="ingredient_id"))
+@Table(name = "inventory_item",
+        uniqueConstraints = @UniqueConstraint(name="uk_inventory_item_ingredient", columnNames = "ingredient_id"),
+        indexes = @Index(name="ix_inventory_item_name", columnList = "name"))
 @SequenceGenerator(name="inventory_item_seq", sequenceName="inventory_item_seq", allocationSize=50)
 public class InventoryItem {
 
-  @Id @GeneratedValue(strategy=GenerationType.SEQUENCE, generator="inventory_item_seq")
+  @Id
+  @GeneratedValue(strategy=GenerationType.SEQUENCE, generator="inventory_item_seq")
   private Long id;
 
-  @OneToOne(optional=false, fetch=FetchType.LAZY)
-  @JoinColumn(name="ingredient_id", nullable=false, foreignKey=@ForeignKey(name="fk_inventoryitem_ingredient"))
+  @OneToOne(optional = false, fetch = FetchType.LAZY)
+  @JoinColumn(name="ingredient_id", nullable=false, unique = true)
   private Ingredient ingredient;
 
-  @Column(nullable=false, precision=19, scale=6)
-  private BigDecimal quantityOnHand;
+  @Column(nullable=false, length=128)
+  private String name;
 
   @Column(precision=19, scale=6)
   private BigDecimal reorderLevel;
 
-  @Version private long version;
+  @Column(precision=19, scale=6)
+  private BigDecimal minLevel;
+
+  @Column(precision=19, scale=6)
+  private BigDecimal targetLevel;
+
+  @Column(precision=19, scale=6)
+  private BigDecimal safetyStock;
+
+  @Version
+  private long version;
 
   @CreationTimestamp @Column(nullable=false, updatable=false)
   private OffsetDateTime createdAt;
