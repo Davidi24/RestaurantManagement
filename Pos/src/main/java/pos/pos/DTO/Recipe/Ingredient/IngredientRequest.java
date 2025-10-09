@@ -1,4 +1,4 @@
-package pos.pos.DTO.Recipe;
+package pos.pos.DTO.Recipe.Ingredient;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

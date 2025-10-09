@@ -2,9 +2,9 @@ package pos.pos.Service.Interfecaes.Recipe;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import pos.pos.DTO.Recipe.IngredientRequest;
-import pos.pos.DTO.Recipe.IngredientResponse;
-import pos.pos.DTO.Recipe.IngredientUpdateRequest;
+import pos.pos.DTO.Recipe.Ingredient.IngredientRequest;
+import pos.pos.DTO.Recipe.Ingredient.IngredientResponse;
+import pos.pos.DTO.Recipe.Ingredient.IngredientUpdateRequest;
 
 public interface IngredientService {
     IngredientResponse create(IngredientRequest request);

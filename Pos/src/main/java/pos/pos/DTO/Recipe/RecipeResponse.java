@@ -1,18 +1,19 @@
 package pos.pos.DTO.Recipe;
 
 import lombok.Builder;
-import pos.pos.Entity.Recipe.UnitOfMeasure;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Builder
-public record IngredientResponse(
+public record RecipeResponse(
         Long id,
         String name,
-        UnitOfMeasure stockUnit,
-        BigDecimal costPerStockUnit,
-        String allergenInfo,
+        String description,
+        BigDecimal portionYield,
+        BigDecimal totalCostPerPortion,
+        List<RecipeLineResponse> lines,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {}

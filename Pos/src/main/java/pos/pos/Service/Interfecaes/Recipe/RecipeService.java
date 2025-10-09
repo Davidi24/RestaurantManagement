@@ -1,18 +1,17 @@
 package pos.pos.Service.Interfecaes.Recipe;
 
-import pos.pos.Entity.Recipe.Recipe;
-import pos.pos.Entity.Recipe.UnitOfMeasure;
+import org.apache.coyote.BadRequestException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import pos.pos.DTO.Recipe.*;
+
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
 
 public interface RecipeService {
-    Recipe create(String name);
-    Optional<Recipe> findById(Long id);
-    List<Recipe> listAll();
-    Recipe rename(Long id, String newName);
-    Recipe addIngredient(Long recipeId, Long ingredientId, BigDecimal quantity, UnitOfMeasure unit, String notes);
-    Recipe updateIngredient(Long recipeIngredientId, BigDecimal quantity, UnitOfMeasure unit, String notes);
-    void removeIngredient(Long recipeId, Long recipeIngredientId);
+    RecipeResponse create(RecipeRequest request);
+    RecipeResponse update(Long id, RecipeRequest request);
     void delete(Long id);
+    RecipeResponse get(Long id);
+    Page<RecipeResponse> list(String q, Pageable pageable);
+    RecipeResponse produce(Long id, BigDecimal portions, String createdBy) throws BadRequestException;
 }

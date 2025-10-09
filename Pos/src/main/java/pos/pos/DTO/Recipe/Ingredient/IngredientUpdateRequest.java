@@ -1,4 +1,4 @@
-package pos.pos.DTO.Recipe;
+package pos.pos.DTO.Recipe.Ingredient;
 
 import lombok.Builder;
 import pos.pos.Entity.Recipe.UnitOfMeasure;

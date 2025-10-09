@@ -1,8 +1,8 @@
 package pos.pos.DTO.Mapper.Recipe;
 
 import org.springframework.stereotype.Component;
-import pos.pos.DTO.Recipe.IngredientRequest;
-import pos.pos.DTO.Recipe.IngredientResponse;
+import pos.pos.DTO.Recipe.Ingredient.IngredientRequest;
+import pos.pos.DTO.Recipe.Ingredient.IngredientResponse;
 import pos.pos.Entity.Recipe.Ingredient;
 
 @Component

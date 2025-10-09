@@ -8,9 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import pos.pos.Config.ApiPaths;
-import pos.pos.DTO.Recipe.IngredientRequest;
-import pos.pos.DTO.Recipe.IngredientResponse;
-import pos.pos.DTO.Recipe.IngredientUpdateRequest;
+import pos.pos.DTO.Recipe.Ingredient.IngredientRequest;
+import pos.pos.DTO.Recipe.Ingredient.IngredientResponse;
+import pos.pos.DTO.Recipe.Ingredient.IngredientUpdateRequest;
 import pos.pos.Service.Interfecaes.Recipe.IngredientService;
 
 @RestController
