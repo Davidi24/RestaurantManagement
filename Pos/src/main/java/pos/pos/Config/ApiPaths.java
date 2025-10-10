@@ -37,4 +37,9 @@ public final class ApiPaths {
     public static final class Ingredient {
         public static final String BASE = V1 + "/ingredient";
     }
+
+
+    public static final class Recipe {
+        public static final String BASE = V1 + "/recipe";
+    }
 }

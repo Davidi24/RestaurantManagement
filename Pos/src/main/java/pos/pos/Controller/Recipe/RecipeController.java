@@ -7,13 +7,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pos.pos.Config.ApiPaths;
 import pos.pos.DTO.Recipe.*;
 import pos.pos.Service.Interfecaes.Recipe.RecipeService;
 
 import java.math.BigDecimal;
 
 @RestController
-@RequestMapping("/api/recipes")
+@RequestMapping(ApiPaths.Recipe.BASE)
 @RequiredArgsConstructor
 public class RecipeController {
 

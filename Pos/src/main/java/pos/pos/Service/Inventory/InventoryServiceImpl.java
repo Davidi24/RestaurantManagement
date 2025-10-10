@@ -68,9 +68,7 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public Page<InventoryItemResponse> listItems(String q, Pageable pageable) {
-        Page<InventoryItem> page = (q == null || q.isBlank())
-                ? itemRepo.findAll(pageable)
-                : itemRepo.findAll(pageable) ;
+        Page<InventoryItem> page = itemRepo.findAll(pageable);
         return page.map(i -> mapper.toResponse(i, moveRepo.computeCurrentQuantity(i.getId())));
     }
 

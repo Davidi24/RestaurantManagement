@@ -30,6 +30,7 @@ public class Recipe {
   @Column(nullable=false, precision=19, scale=6)
   private BigDecimal portionYield;
 
+  @Builder.Default
   @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<RecipeLine> lines = new ArrayList<>();
 
@@ -43,12 +44,15 @@ public class Recipe {
   private OffsetDateTime updatedAt;
 
   public void setLines(List<RecipeLine> ls) {
+    if (this.lines == null) this.lines = new ArrayList<>();
     this.lines.clear();
     if (ls != null) {
       for (RecipeLine l : ls) addLine(l);
     }
   }
+
   public void addLine(RecipeLine l) {
+    if (l == null) return;
     l.setRecipe(this);
     this.lines.add(l);
   }

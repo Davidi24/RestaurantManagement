@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pos.pos.Config.ApiPaths;
 import pos.pos.DTO.Inventory.InventoryItemRequest;
 import pos.pos.DTO.Inventory.InventoryItemResponse;
 import pos.pos.DTO.Inventory.MovementRequest;
@@ -16,7 +17,7 @@ import pos.pos.Service.Interfecaes.Inventory.InventoryService;
 import java.time.OffsetDateTime;
 
 @RestController
-@RequestMapping("/api/inventory")
+@RequestMapping(ApiPaths.Inventory.BASE)
 @RequiredArgsConstructor
 public class InventoryController {
 

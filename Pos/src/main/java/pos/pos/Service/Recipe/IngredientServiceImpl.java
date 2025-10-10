@@ -33,7 +33,6 @@ public class IngredientServiceImpl implements IngredientService {
         }
         try {
             Ingredient saved = repo.saveAndFlush(mapper.toEntity(request));
-            System.out.println("Saved: " + saved);
             return mapper.toResponse(saved);
         } catch (DataIntegrityViolationException e) {
             throw new AlreadyExistsException("Ingredient", name);
@@ -95,6 +94,7 @@ public class IngredientServiceImpl implements IngredientService {
                 .orElseThrow(() -> new NotFoundException("Ingredient not found"));
     }
 
+    //??
     @Override
     public Page<IngredientResponse> list(String q, Pageable pageable) {
         String query = q == null ? null : q.trim();
